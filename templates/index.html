@@ -361,7 +361,7 @@
         }
 
         function vyberOdmenu(hodnota, zprava) {
-            fetch('https://mlha-valky-gps.onrender.com/api/vybrat_odmenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({hodnota: hodnota}) })
+            fetch('/api/vybrat_odmenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({hodnota: hodnota}) })
             .then(res => res.json()).then(data => {
                 hracMince = data.stav.mince;
                 aktualizujRozhrani();
@@ -506,13 +506,13 @@
             hracVybaveni[typ] = itemId;
             nahledVybaveni = null; 
             aktualizujRozhrani();
-            fetch('https://mlha-valky-gps.onrender.com/api/zmenit_obleceni', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ typ: typ, item_id: itemId }) });
+            fetch('/api/zmenit_obleceni', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ typ: typ, item_id: itemId }) });
         }
 
         function koupitPredmet(itemId, cena, event) {
             event.stopPropagation();
             if (hracMince < cena) { alert("Nemáš dostatek mincí! Běž ven a sbírej loot chůzí, nebo se podívej na reklamu."); return; }
-            fetch('https://mlha-valky-gps.onrender.com/api/body', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId, cena: cena }) })
+            fetch('/api/body', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId, cena: cena }) })
             .then(res => res.json()).then(data => {
                 if (data.status === "success") {
                     hracMince = data.stav.mince; hracZakoupene = data.stav.zakoupene; hracAktivniBuffy = data.stav.aktivni_buffy;
@@ -520,13 +520,13 @@
                     if (data.vyhra !== undefined && data.vyhra !== null) { showToast(`🎲 Otevřela jsi truhlu! Získáváš neuvěřitelných ${data.vyhra} zlaťáků!`); } 
                     else { showToast("✨ Nákup byl úspěšný!"); }
                     nahledVybaveni = null; aktualizujRozhrani();
-                    fetch('https://mlha-valky-gps.onrender.com').then(r => r.json()).then(d => { prekresliMlhu(d.body); });
+                    fetch('/api/body').then(r => r.json()).then(d => { prekresliMlhu(d.body); });
                 }
             });
         }
 
         function nactiHraceAMapu() {
-            fetch('https://mlha-valky-gps.onrender.com').then(res => res.json()).then(data => {
+            fetch('/api/body').then(res => res.json()).then(data => {
                 if (data.body && data.body.length > 0) {
                     var posledniBod = data.body[data.body.length - 1];
                     if (posledniBod[0] !== 0 && posledniBod[1] !== 0) {
@@ -553,7 +553,7 @@
                         if (!userMarker) { userMarker = L.marker([lat, lng], {icon: ziskejIkonyHrace()}).addTo(map); } 
                         else { userMarker.setLatLng([lat, lng]); }
                         doplňLoot(lat, lng); zkontrolujKolizeSLootem(lat, lng);
-                        fetch('https://mlha-valky-gps.onrender.com', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: lat, lng: lng }) })
+                        fetch('/api/body', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: lat, lng: lng }) })
                         .then(res => res.json()).then(data => {
                             hracLevel = data.stav.level; hracXp = data.stav.xp; hracXpPotreba = data.stav.xp_potreba; hracCelkemXp = data.stav.celkem_xp; celkovaVzdalenost = data.stav.vzdalenost; hracAktivniBuffy = data.stav.aktivni_buffy;
                             aktualizujRozhrani(); prekresliMlhu(data.vsechny_body);
