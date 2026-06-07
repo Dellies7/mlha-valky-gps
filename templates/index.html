@@ -11,6 +11,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* PŘIHLAŠOVACÍ OBRAZOVKA */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; font-family: sans-serif; }
+        .login-box { background: #1a1a1a; padding: 30px; border-radius: 15px; border: 2px solid #444; text-align: center; width: 80%; max-width: 300px; color: white; }
+        .login-box h2 { margin-top: 0; color: #00d2ff; }
+        .login-box input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; }
+        .login-btn, .register-btn { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .login-btn { background: #00d2ff; color: #000; }
+        .register-btn { background: #444; color: #fff; }
+        #login-zprava { color: #ff4c4c; font-weight: bold; margin-bottom: 0; }
+
+        /* ZÁKLADNÍ ROZHRANÍ A MAPA */
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background-color: #06060a; color: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; background: #000; }
@@ -36,24 +47,21 @@
         .panel-header h2 { margin: 0; font-size: 1.1rem; color: #00e5ff; text-transform: uppercase; letter-spacing: 1px; }
         .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
 
+        /* AVATAR A OBCHOD */
         .avatar-render-box { background: radial-gradient(circle, #101026 0%, #040408 100%); border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.15); height: 280px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
         .preview-badge { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #ffea00; color: #000; font-size: 0.65rem; font-weight: 900; padding: 4px 12px; border-radius: 10px; display: none; box-shadow: 0 0 10px rgba(255, 234, 0, 0.5); letter-spacing: 0.5px; z-index: 5; }
         .clear-preview-btn { position: absolute; bottom: 12px; right: 12px; background: #ff1744; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 2px 8px rgba(255, 23, 68, 0.4); text-transform: uppercase; z-index: 5; }
-        
         .hero-vector { width: 160px; height: 220px; }
 
-        /* VYLEPŠENÉ ANIMACE MAZLÍČKŮ */
         @keyframes breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
         @keyframes auraPulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.15); opacity: 0.8; } }
-        
         @keyframes petFlyAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         .pet-flying { animation: petFlyAnim 2s infinite ease-in-out; }
-
         @keyframes petGroundAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
         .pet-ground { animation: petGroundAnim 3s infinite ease-in-out; }
-
         .avatar-breathe { animation: breathe 3s ease-in-out infinite; transform-origin: bottom center; }
 
+        /* LEAFLET ZNAČKY A NOTIFIKACE */
         .custom-leaflet-avatar { background: transparent; border: none; }
         .pogo-marker-container { position: relative; width: 120px; height: 120px; display: flex; justify-content: center; align-items: center; }
         .pogo-pulse-ring { position: absolute; top: 20px; width: 85px; height: 85px; border: 3px solid #00e5ff; border-radius: 50%; background: rgba(0, 229, 255, 0.05); animation: pogoPulse 2.2s infinite ease-out; pointer-events: none; z-index: 1; }
@@ -61,7 +69,6 @@
         .pogo-avatar-body { position: absolute; z-index: 2; bottom: 20px; transform: scale(0.48); transform-origin: bottom center; }
 
         .loot-marker { display: flex; justify-content: center; align-items: center; font-size: 1.8rem; filter: drop-shadow(0 0 10px #ffea00); animation: floatLoot 2s infinite ease-in-out; pointer-events: none; }
-        
         @keyframes floatLoot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
         #toast { visibility: hidden; min-width: 250px; background: rgba(20, 20, 30, 0.95); color: #ffea00; text-align: center; border-radius: 30px; padding: 12px 20px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 0.9rem; font-weight: bold; border: 1px solid #ffea00; box-shadow: 0 0 15px rgba(255, 234, 0, 0.3); }
@@ -83,32 +90,44 @@
         .wardrobe-item.equipped { border-color: #00e676; background: rgba(0, 230, 118, 0.08); box-shadow: 0 0 10px rgba(0, 230, 118, 0.15); }
         .wardrobe-item.locked { opacity: 0.3; cursor: not-allowed; }
         .wardrobe-item.premium-locked { border-color: #ffea00; background: rgba(255, 234, 0, 0.04); }
-        
         .wardrobe-item .color-dot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); box-shadow: 0 2px 5px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-size: 11px; color: #111; }
         .wardrobe-item .item-name { font-size: 0.65rem; font-weight: 600; color: rgba(255,255,255,0.8); display: block; margin-top: 4px; margin-bottom: 4px; min-height: 18px; line-height: 1.2; }
         .lock-lvl { position: absolute; top: 4px; right: 6px; font-size: 0.6rem; color: #ff1744; font-weight: 800; }
-        
         .item-actions { display: flex; gap: 4px; width: 100%; margin-top: auto; }
         .buy-btn, .equip-btn, .unequip-btn, .preview-btn { border: none; border-radius: 6px; padding: 6px 2px; font-size: 0.6rem; font-weight: bold; cursor: pointer; text-transform: uppercase; text-align: center; }
-        
         .buy-btn { background: #ffea00; color: #000; flex: 2; }
         .equip-btn { background: #00e5ff; color: #000; flex: 2; }
         .unequip-btn { background: #ff1744; color: #fff; flex: 2; }
-        
         .preview-btn { background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); flex: 1; display: flex; justify-content: center; align-items: center; font-size: 0.7rem; }
         .preview-btn:hover { background: rgba(255, 255, 255, 0.2); border-color: #fff; }
         .preview-btn.active { background: #ffea00; color: #000; border-color: #ffea00; box-shadow: 0 0 8px rgba(255, 234, 0, 0.4); }
-
         .buy-btn:hover, .equip-btn:hover, .unequip-btn:hover { filter: brightness(1.15); }
 
         .leaflet-top { top: 100px; }
-
-        .leaflet-marker-icon {
-    transition: transform 1.5s linear;
-}
+        .leaflet-marker-icon { transition: transform 1.5s linear; }
     </style>
 </head>
 <body>
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>Mlha Války</h2>
+            <input type="text" id="login-jmeno" placeholder="Tvoje jméno">
+            <input type="password" id="login-heslo" placeholder="Tvoje heslo">
+            <button onclick="prihlasitSe()" class="login-btn">Přihlásit se</button>
+            <button onclick="registrovatSe()" class="register-btn">Nová registrace</button>
+            <p id="login-zprava"></p>
+        </div>
+    </div>
+
+    <div id="kniha-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 9998; justify-content: center; align-items: center; font-family: sans-serif;">
+        <div class="login-box" style="width: 90%; max-width: 400px;">
+            <h2 id="kniha-nazev">Vrcholová kniha</h2>
+            <div id="kniha-zapisy" style="max-height: 250px; overflow-y: auto; text-align: left; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; font-size: 14px;"></div>
+            <input type="text" id="kniha-novy-vzkaz" placeholder="Napiš svůj vzkaz...">
+            <button onclick="ulozitVzkaz()" class="login-btn">Zapsat do knihy</button>
+            <button onclick="zavritKnihu()" class="register-btn">Zavřít knihu</button>
+        </div>
+    </div>
 
     <div id="map"></div>
     <div id="toast"></div>
@@ -144,16 +163,17 @@
                 <button class="clear-preview-btn" id="clearPreviewBtn" onclick="vymazNahled(event)">Zrušit náhled</button>
                 <div id="avatarBigPreview"></div>
             </div>
-            
             <button class="rewarded-ad-btn" onclick="spustitReklamu()">
                 <i class="fas fa-play-circle"></i> Získat +5 zlaťáků (Reklama)
             </button>
-
             <div id="wardrobeContent"></div>
         </div>
     </div>
 
     <script>
+        var prihlasenyUzivatelId = null;
+        var aktualniZajimavostId = null;
+        
         var map = L.map('map', { zoomControl: true, attributionControl: false }).setView([48.8015, 14.2925], 16);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(map);
 
@@ -163,6 +183,7 @@
         var watchId = null;
         var isTracking = false;
 
+        // Načtení dat ze serveru (Jinja)
         var hracLevel = {{ stav.level|default(1) }};
         var hracXp = {{ stav.xp|default(0) }};
         var hracXpPotreba = {{ stav.xp_potreba|default(100) }};
@@ -171,16 +192,14 @@
         var hracMince = {{ stav.mince|default(0) }};
         var hracZakoupene = {{ stav.zakoupene|tojson|default('[]') }};
         var hracAktivniBuffy = {{ stav.aktivni_buffy|tojson|default('{}') }};
-        
         var hracVybaveni = {{ stav.vybaveni|tojson|default('{}') }};
+        var predmetySef = {{ predmety|tojson|default('[]') }};
         var nahledVybaveni = null; 
-        
-        var predmetySef = {{ predmety|tojson }};
 
+        // Notifikace a reklama
         function showToast(msg) {
             var x = document.getElementById("toast");
-            x.innerText = msg;
-            x.className = "show";
+            x.innerText = msg; x.className = "show";
             setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3800);
         }
 
@@ -188,33 +207,71 @@
             var overlay = document.getElementById('adOverlay');
             var timerEl = document.getElementById('adTimer');
             overlay.style.display = 'flex';
-            var timeLeft = 5;
-            timerEl.innerText = timeLeft;
-
+            var timeLeft = 5; timerEl.innerText = timeLeft;
             var countdown = setInterval(function() {
-                timeLeft--;
-                timerEl.innerText = timeLeft;
+                timeLeft--; timerEl.innerText = timeLeft;
                 if(timeLeft <= 0) {
-                    clearInterval(countdown);
-                    overlay.style.display = 'none';
+                    clearInterval(countdown); overlay.style.display = 'none';
                     vyberOdmenu(5, "📺 Děkujeme! Získáváš +5 zlaťáků.");
                 }
             }, 1000);
         }
 
-        // KRESLENÍ MODELU (OPRAVENÁ FYZIKA MAZLÍČKŮ)
-        function generujAvatarSVG(vyb = hracVybaveni) {
-            var hlava = predmetySef.find(p => p.id === vyb.hlava);
-            var telo = predmetySef.find(p => p.id === vyb.telo);
-            var oci = predmetySef.find(p => p.id === vyb.oci);
-            var ruka = predmetySef.find(p => p.id === vyb.ruka);
-            var aura = predmetySef.find(p => p.id === vyb.aura);
-            var pet = predmetySef.find(p => p.id === vyb.mazlicek);
+        // --- PŘIHLAŠOVACÍ SYSTÉM ---
+        function registrovatSe() {
+            var jmeno = document.getElementById('login-jmeno').value;
+            var heslo = document.getElementById('login-heslo').value;
+            fetch('/api/register', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jmeno: jmeno, heslo: heslo })
+            }).then(res => res.json()).then(data => {
+                var zprava = document.getElementById('login-zprava');
+                if (data.chyba) { zprava.style.color = '#ff4c4c'; zprava.innerText = data.chyba; } 
+                else { zprava.style.color = '#4cff4c'; zprava.innerText = "Super! Teď se můžeš přihlásit."; }
+            });
+        }
 
-            var cHlava = hlava ? hlava.barva : "transparent";
-            var cTelo = telo ? telo.barva : "#1976d2"; 
-            var cOci = oci ? oci.barva : "transparent";
-            var cRuka = ruka ? ruka.barva : "transparent";
+        function prihlasitSe() {
+            var jmeno = document.getElementById('login-jmeno').value;
+            var heslo = document.getElementById('login-heslo').value;
+            fetch('/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jmeno: jmeno, heslo: heslo })
+            }).then(res => res.json()).then(data => {
+                var zprava = document.getElementById('login-zprava');
+                if (data.chyba) { zprava.innerText = data.chyba; } 
+                else {
+                    prihlasenyUzivatelId = data.user_id;
+                    localStorage.setItem('hrac_id', data.user_id);
+                    document.getElementById('login-screen').style.display = 'none';
+                    hracLevel = data.stav.level;
+                    hracXp = data.stav.xp;
+                    
+                    // Nyní stáhneme mapu a zajímavosti!
+                    nactiHraceAMapu();
+                    nactiZajimavosti();
+                    aktualizujRozhrani();
+                }
+            });
+        }
+
+        window.addEventListener('load', function() {
+            var ulozeneId = localStorage.getItem('hrac_id');
+            if (ulozeneId) {
+                prihlasenyUzivatelId = ulozeneId;
+                document.getElementById('login-screen').style.display = 'none';
+                // Nyní stáhneme mapu a zajímavosti!
+                nactiHraceAMapu();
+                nactiZajimavosti();
+            }
+        });
+
+        // --- AVATAR A VZHLED ---
+        function generujAvatarSVG(vyb = hracVybaveni) {
+            var hlava = predmetySef.find(p => p.id === vyb.hlava); var telo = predmetySef.find(p => p.id === vyb.telo);
+            var oci = predmetySef.find(p => p.id === vyb.oci); var ruka = predmetySef.find(p => p.id === vyb.ruka);
+            var aura = predmetySef.find(p => p.id === vyb.aura); var pet = predmetySef.find(p => p.id === vyb.mazlicek);
+
+            var cHlava = hlava ? hlava.barva : "transparent"; var cTelo = telo ? telo.barva : "#1976d2"; 
+            var cOci = oci ? oci.barva : "transparent"; var cRuka = ruka ? ruka.barva : "transparent";
             var cAura = aura ? aura.barva : "transparent";
 
             return `
@@ -226,31 +283,22 @@
                         <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                         <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity="0.8"/></filter>
                     </defs>
-
                     ${aura ? `<circle cx="60" cy="90" r="45" fill="none" stroke="${cAura}" stroke-width="4" filter="url(#neonGlow)" style="animation: auraPulse 2s infinite ease-in-out; transform-origin: 60px 90px;"/>` : ''}
-
                     <ellipse cx="60" cy="140" rx="22" ry="6" fill="rgba(0,0,0,0.6)"/>
                     <g filter="url(#dropShadow)" class="avatar-breathe">
                         <rect x="40" y="50" width="9" height="35" rx="4" fill="url(#bodyGrad)" transform="rotate(20, 45, 50)"/>
                         <rect x="48" y="90" width="10" height="40" rx="3" fill="url(#bodyGrad)"/>
                         <rect x="62" y="90" width="10" height="42" rx="3" fill="url(#bodyGrad)"/>
-                        
                         ${vyb.telo === 'o3' || vyb.telo === 'o_vip' || vyb.telo === 'o_phoenix' ? `<path d="M 36 50 L 84 50 L 76 110 L 44 110 Z" fill="url(#armorGrad)" rx="4"/>` : `<path d="M 45 45 C 45 38, 75 38, 75 45 L 71 95 C 71 102, 49 102, 49 95 Z" fill="url(#armorGrad)"/>`}
                         ${vyb.telo === 'o_phoenix' ? `<path d="M 40 55 L 24 85 L 42 75 Z M 80 55 L 96 85 L 78 75 Z" fill="#ff3d00" filter="url(#neonGlow)"/>` : ''}
-
-                        <rect x="48" y="82" width="24" height="5" fill="#111" rx="1"/>
-                        <rect x="47" y="80" width="6" height="9" fill="#ffd700" rx="1"/>
+                        <rect x="48" y="82" width="24" height="5" fill="#111" rx="1"/><rect x="47" y="80" width="6" height="9" fill="#ffd700" rx="1"/>
                         <ellipse cx="60" cy="30" rx="14" ry="17" fill="url(#skinGrad)"/>
-                        
                         ${oci ? (vyb.oci === 'd2' ? `<path d="M 49 25 L 55 29 L 49 32 Z M 71 25 L 65 29 L 71 32 Z" fill="${cOci}" filter="url(#neonGlow)"/>` : `<rect x="46" y="24" width="28" height="8" fill="${cOci}" rx="3"/>`) : `<circle cx="54" cy="28" r="3" fill="#111"/><circle cx="66" cy="28" r="3" fill="#111"/>`}
-                        
                         ${vyb.hlava === 'h1' ? `<path d="M 32 25 Q 60 -20 88 25 Q 60 12 32 25 Z" fill="${cHlava}"/><polygon points="45,22 75,22 60,-10" fill="${cHlava}"/>` : ''} 
                         ${vyb.hlava === 'h3' ? `<path d="M 44 28 C 44 -5, 76 -5, 76 28 L 76 40 C 76 45, 44 45, 44 40 Z" fill="${cHlava}"/><rect x="48" y="18" width="24" height="6" fill="#111" rx="2"/>` : ''} 
                         ${vyb.hlava === 'h_vip' ? `<ellipse cx="60" cy="10" rx="16" ry="6" fill="transparent" stroke="#ffea00" stroke-width="3" filter="url(#neonGlow)"/>` : ''}
                         ${vyb.hlava === 'h_cyber' ? `<path d="M 42 18 L 78 18 L 75 40 L 45 40 Z" fill="#212121"/><rect x="46" y="24" width="28" height="6" fill="${cHlava}" filter="url(#neonGlow)" rx="1"/>` : ''}
-
                         <rect x="70" y="50" width="10" height="38" rx="4" fill="url(#bodyGrad)" transform="rotate(-20, 75, 50)"/>
-                        
                         <g transform="translate(78, 65) rotate(15)">
                             ${vyb.ruka === 'z1' ? `<path d="M -2 0 L -2 -45 L 0 -55 L 2 -45 L 2 0 Z" fill="${cRuka}"/><rect x="-8" y="0" width="16" height="4" fill="#546e7a" rx="1"/><rect x="-2" y="4" width="4" height="12" fill="#3e2723" rx="1"/>` : ''}
                             ${vyb.ruka === 'z2' ? `<rect x="-2.5" y="-55" width="5" height="55" fill="${cRuka}" filter="url(#neonGlow)" rx="2"/><rect x="-3.5" y="0" width="7" height="16" fill="#cfd8dc" rx="1"/><rect x="-3.5" y="2" width="7" height="2" fill="#212121"/><rect x="-3.5" y="6" width="7" height="2" fill="#212121"/>` : ''}
@@ -259,11 +307,9 @@
                             ${vyb.ruka === 'z_hammer' ? `<rect x="-2" y="-20" width="4" height="50" fill="#cfd8dc" rx="1"/><rect x="-11" y="-35" width="22" height="15" fill="${cRuka}" filter="url(#neonGlow)" rx="2"/><rect x="-11" y="-28" width="22" height="2" fill="#111"/>` : ''}
                         </g>
                     </g>
-
                     ${vyb.mazlicek === 'pet_coon' ? `<g class="pet-ground"><g transform="translate(15, 110)"><path d="M 0 15 C -10 5, -15 25, 0 30 Z" fill="#bf360c"/><ellipse cx="15" cy="20" rx="12" ry="10" fill="#e65100"/><circle cx="23" cy="10" r="7" fill="#e65100"/><polygon points="18,5 20,-2 22,3" fill="#bf360c"/><polygon points="24,3 26,-2 28,7" fill="#bf360c"/><circle cx="25" cy="9" r="1.5" fill="#111"/></g></g>` : ''}
                     ${vyb.mazlicek === 'pet_fox' ? `<g class="pet-ground"><g transform="translate(15, 115)"><path d="M 5 15 Q -5 5 0 -5 Q 10 0 5 15 Z" fill="#ff3d00" filter="url(#neonGlow)"/><ellipse cx="15" cy="15" rx="10" ry="7" fill="#e65100"/><circle cx="23" cy="8" r="6" fill="#e65100"/><polygon points="19,4 17,-1 21,1" fill="#e65100"/><polygon points="23,3 26,-1 27,5" fill="#e65100"/><circle cx="24" cy="8" r="1.5" fill="#111"/></g></g>` : ''}
                     ${vyb.mazlicek === 'pet_wolf' ? `<g class="pet-ground"><g transform="translate(15, 112)"><path d="M 0 15 Q -10 20 -5 5 Z" fill="#4a148c" filter="url(#neonGlow)"/><rect x="5" y="10" width="16" height="10" rx="4" fill="#311b92"/><circle cx="22" cy="8" r="6" fill="#311b92"/><polygon points="19,4 20,-2 23,2" fill="#4a148c"/><polygon points="24,3 27,-3 28,4" fill="#4a148c"/><circle cx="25" cy="7" r="1.5" fill="#d500f9" filter="url(#neonGlow)"/></g></g>` : ''}
-                    
                     ${vyb.mazlicek === 'pet_dragon' ? `<g class="pet-flying"><g transform="translate(15, 55)"><ellipse cx="15" cy="15" rx="9" ry="7" fill="#d500f9" filter="url(#neonGlow)"/><path d="M 10 10 L 0 0 L 15 10 Z M 20 10 L 30 0 L 15 10 Z" fill="#aa00ff"/><circle cx="15" cy="13" r="10" fill="none" stroke="#d500f9" stroke-width="1" opacity="0.5"/></g></g>` : ''}
                     ${vyb.mazlicek === 'pet_owl' ? `<g class="pet-flying"><g transform="translate(15, 50)"><ellipse cx="15" cy="15" rx="9" ry="12" fill="#ffffff"/><path d="M 6 15 Q -1 20 6 25 Z M 24 15 Q 31 20 24 25 Z" fill="#e0f7fa"/><circle cx="11" cy="10" r="2" fill="#00e5ff" filter="url(#neonGlow)"/><circle cx="19" cy="10" r="2" fill="#00e5ff" filter="url(#neonGlow)"/><polygon points="14,13 16,13 15,16" fill="#ffea00"/></g></g>` : ''}
                     ${vyb.mazlicek === 'pet_robo' ? `<g class="pet-flying"><g transform="translate(15, 60)"><ellipse cx="15" cy="15" rx="11" ry="11" fill="#212121"/><circle cx="15" cy="15" r="5" fill="#00e676" filter="url(#neonGlow)"/><rect x="3" y="13" width="4" height="4" fill="#00e676"/><rect x="23" y="13" width="4" height="4" fill="#00e676"/></g></g>` : ''}
@@ -271,57 +317,46 @@
             `;
         }
 
-        // RYCHLÁ MLHA BEZ VÝPOČETNÍHO PÁDU (Vykreslení čtverce a děr přes Leaflet nativně)
+        // --- MAPA A FOG OF WAR ---
         function prekresliMlhu(navstivenaMista) {
             fogLayer.clearLayers();
+            
+            // 1. Vždy si připravíme černý obdélník přes celý svět
+            var polygonCoords = [[[-90, -180], [90, -180], [90, 180], [-90, 180], [-90, -180]]];
+            
             var platnaMista = navstivenaMista.filter(m => m[0] !== 0 && m[1] !== 0);
-            if (platnaMista.length === 0) return;
+            
+            // 2. Pokud už máš nějaké kroky, vyřízneme do tmy díry
+            if (platnaMista.length > 0) {
+                var radiusMetry = hracAktivniBuffy['m_dalekohled'] !== undefined ? 120 : 70;
+                try {
+                    var points = platnaMista.map(m => turf.point([m[1], m[0]]));
+                    var featureColl = turf.featureCollection(points);
+                    var buffered = turf.buffer(featureColl, radiusMetry, {units: 'meters', steps: 8});
+                    var dissolved = turf.dissolve(buffered);
 
-            var radiusMetry = hracAktivniBuffy['m_dalekohled'] !== undefined ? 120 : 70;
-
-            try {
-                var points = platnaMista.map(m => turf.point([m[1], m[0]]));
-                var featureColl = turf.featureCollection(points);
-                var buffered = turf.buffer(featureColl, radiusMetry, {units: 'meters', steps: 8});
-                var dissolved = turf.dissolve(buffered);
-
-                // Nakreslíme svět od pólu k pólu
-                var polygonCoords = [
-                    [[-90, -180], [90, -180], [90, 180], [-90, 180], [-90, -180]]
-                ];
-
-                turf.flattenEach(dissolved, function (currentFeature) {
-                    var geom = currentFeature.geometry;
-                    if (geom.type === 'Polygon' && geom.coordinates.length > 0) {
-                        var hole = geom.coordinates[0]; 
-                        var leafletHole = hole.map(coord => [coord[1], coord[0]]); 
-                        polygonCoords.push(leafletHole);
-                    }
-                });
-
-                L.polygon(polygonCoords, {
-                    color: 'transparent',
-                    fillColor: '#000000',
-                    fillOpacity: 0.98,
-                    smoothFactor: 1
-                }).addTo(fogLayer);
-
-            } catch(e) {
-                console.error("Mlha:", e);
+                    turf.flattenEach(dissolved, function (currentFeature) {
+                        var geom = currentFeature.geometry;
+                        if (geom.type === 'Polygon' && geom.coordinates.length > 0) {
+                            var hole = geom.coordinates[0]; 
+                            var leafletHole = hole.map(coord => [coord[1], coord[0]]); 
+                            polygonCoords.push(leafletHole);
+                        }
+                    });
+                } catch(e) { console.error("Mlha:", e); }
             }
+
+            // 3. Vykreslíme výsledek na mapu (buď celočerný, nebo s dírami)
+            L.polygon(polygonCoords, {
+                color: 'transparent', fillColor: '#000000', fillOpacity: 0.98, smoothFactor: 1
+            }).addTo(fogLayer);
         }
 
-        // POUZE TRUHLY (VYŽÁDÁNO)
         function doplňLoot(lat, lng) {
             var hracPoloha = L.latLng(lat, lng);
-            
-            // Úklid zaseknutého lootu
             lootLayer.eachLayer(function(marker) {
-                if (hracPoloha.distanceTo(marker.getLatLng()) > 2500) {
-                    lootLayer.removeLayer(marker);
-                }
+                if (hracPoloha.distanceTo(marker.getLatLng()) > 2500) { lootLayer.removeLayer(marker); }
             });
-
             var maxLootu = hracAktivniBuffy['m_radar'] !== undefined ? 30 : 15; 
             var pocet = lootLayer.getLayers().length;
             
@@ -330,35 +365,26 @@
                 for (var i=0; i<chybi; i++) {
                     var vzdalenostMetry = 200 + (Math.random() * 1300);
                     var uhel = Math.random() * Math.PI * 2;
-                    
                     var offsetLat = (vzdalenostMetry / 111320) * Math.cos(uhel);
                     var offsetLng = (vzdalenostMetry / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(uhel);
-                    
                     var chest = L.marker([lat + offsetLat, lng + offsetLng], { 
                         icon: L.divIcon({ className: 'loot-marker', html: '<i class="fas fa-box-open" style="color: #ffea00;"></i>', iconSize: [40, 40] }) 
                     });
-                    
                     chest.property('itemType', 'chest');
                     chest.addTo(lootLayer);
                 }
             }
         }
 
-        L.Marker.include({
-            property: function(id, val) { if(val === undefined) return this.options[id]; this.options[id] = val; return this; }
-        });
+        L.Marker.include({ property: function(id, val) { if(val === undefined) return this.options[id]; this.options[id] = val; return this; } });
 
-        // JEN TRUHLY -> JEN MINCE
         function zkontrolujKolizeSLootem(lat, lng) {
             var hracPoloha = L.latLng(lat, lng);
             var polomerSberu = hracAktivniBuffy['m_magnet'] !== undefined ? 60 : 30; 
-            
             lootLayer.eachLayer(function(marker) {
-                var vzdalenost = hracPoloha.distanceTo(marker.getLatLng());
-                if (vzdalenost < polomerSberu) { 
+                if (hracPoloha.distanceTo(marker.getLatLng()) < polomerSberu) { 
                     lootLayer.removeLayer(marker); 
                     var nasobitel = hracAktivniBuffy['m_double'] !== undefined ? 2 : 1;
-                    
                     vyberOdmenu(20 * nasobitel, nasobitel === 2 ? "📦 Našla jsi truhlu! +40 zlaťáků (2x BONUS)" : "📦 Našla jsi truhlu! +20 zlaťáků");
                 }
             });
@@ -368,8 +394,7 @@
             fetch('/api/vybrat_odmenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({hodnota: hodnota}) })
             .then(res => res.json()).then(data => {
                 hracMince = data.stav.mince;
-                aktualizujRozhrani();
-                showToast(zprava);
+                aktualizujRozhrani(); showToast(zprava);
                 document.getElementById('coinAmount').style.transform = 'scale(1.5)';
                 setTimeout(() => document.getElementById('coinAmount').style.transform = 'scale(1)', 300);
             });
@@ -378,12 +403,7 @@
         function ziskejIkonyHrace() {
             return L.divIcon({
                 className: 'custom-leaflet-avatar',
-                html: `
-                    <div class="pogo-marker-container">
-                        <div class="pogo-pulse-ring"></div>
-                        <div class="pogo-avatar-body">${generujAvatarSVG()}</div>
-                    </div>
-                `,
+                html: `<div class="pogo-marker-container"><div class="pogo-pulse-ring"></div><div class="pogo-avatar-body">${generujAvatarSVG()}</div></div>`,
                 iconSize: [120, 120], iconAnchor: [60, 110]
             });
         }
@@ -398,79 +418,54 @@
             var hracVzhledData = nahledVybaveni ? nahledVybaveni : hracVybaveni;
             document.getElementById('avatarBigPreview').innerHTML = generujAvatarSVG(hracVzhledData);
             
-            if (nahledVybaveni) {
-                document.getElementById('previewBadge').style.display = 'block';
-                document.getElementById('clearPreviewBtn').style.display = 'block';
-            } else {
-                document.getElementById('previewBadge').style.display = 'none';
-                document.getElementById('clearPreviewBtn').style.display = 'none';
-            }
-
+            if (nahledVybaveni) { document.getElementById('previewBadge').style.display = 'block'; document.getElementById('clearPreviewBtn').style.display = 'block'; } 
+            else { document.getElementById('previewBadge').style.display = 'none'; document.getElementById('clearPreviewBtn').style.display = 'none'; }
             if (userMarker) { userMarker.setIcon(ziskejIkonyHrace()); }
             vykresliWardrobe();
         }
 
         function togglePanel(panelId) {
-            var panely = ['wardrobePanel', 'milestonePanel'];
+            var panely = ['wardrobePanel'];
             panely.forEach(id => {
                 var el = document.getElementById(id);
                 if (el) { 
-                    if (id === panelId) {
-                        el.classList.toggle('open');
-                        if (panelId === 'wardrobePanel') { vymazNahled(); }
-                    } else { el.classList.remove('open'); }
+                    if (id === panelId) { el.classList.toggle('open'); if (panelId === 'wardrobePanel') { vymazNahled(); } } 
+                    else { el.classList.remove('open'); }
                 }
             });
         }
 
         function zobrazNahled(typ, itemId, event) {
             if (event) event.stopPropagation();
-            if (!nahledVybaveni) {
-                nahledVybaveni = Object.assign({}, hracVybaveni);
-            }
-            
-            if (nahledVybaveni[typ] === itemId) {
-                nahledVybaveni[typ] = hracVybaveni[typ]; 
-            } else {
-                nahledVybaveni[typ] = itemId;
-            }
-
+            if (!nahledVybaveni) { nahledVybaveni = Object.assign({}, hracVybaveni); }
+            if (nahledVybaveni[typ] === itemId) { nahledVybaveni[typ] = hracVybaveni[typ]; } else { nahledVybaveni[typ] = itemId; }
             var jeStejny = true;
             for (var k in hracVybaveni) { if (nahledVybaveni[k] !== hracVybaveni[k]) { jeStejny = false; break; } }
             if (jeStejny) nahledVybaveni = null;
-
             aktualizujRozhrani();
         }
 
         function vymazNahled(event) {
             if (event) event.stopPropagation();
-            nahledVybaveni = null;
-            aktualizujRozhrani();
+            nahledVybaveni = null; aktualizujRozhrani();
         }
 
         function vykresliWardrobe() {
-            var container = document.getElementById('wardrobeContent');
-            container.innerHTML = "";
+            var container = document.getElementById('wardrobeContent'); container.innerHTML = "";
             var sekce = { "hlava": "Pokrývka hlavy", "telo": "Svršky a oblečení", "ruka": "Vybavení do ruky", "aura": "Epické Aury", "mazlicek": "Mazlíčci", "mapa": "Vychytávky (na 60 min)", "consumable": "Truhly a Elixíry" };
             
             for (var klic in sekce) {
                 container.innerHTML += `<div class="wardrobe-section-title">${sekce[klic]}</div>`;
-                var grid = document.createElement('div');
-                grid.className = "wardrobe-grid";
-                
+                var grid = document.createElement('div'); grid.className = "wardrobe-grid";
                 predmetySef.filter(p => p.typ === klic).forEach(p => {
                     var jeOdemcenLevel = hracLevel >= p.req_level;
-                    var item = document.createElement('div');
-                    
                     var jeZakoupen = !p.premium || hracZakoupene.includes(p.id);
                     var jeNasazen = hracVybaveni[p.typ] === p.id;
                     var jeVNahledu = nahledVybaveni && nahledVybaveni[p.typ] === p.id;
 
+                    var item = document.createElement('div');
                     item.className = `wardrobe-item ${jeNasazen ? 'equipped' : ''} ${!jeOdemcenLevel ? 'locked' : ''} ${p.premium && !jeZakoupen ? 'premium-locked' : ''}`;
-                    if (jeVNahledu && !jeNasazen) {
-                        item.style.borderColor = "#ffea00";
-                        item.style.boxShadow = "0 0 10px rgba(255, 234, 0, 0.3)";
-                    }
+                    if (jeVNahledu && !jeNasazen) { item.style.borderColor = "#ffea00"; item.style.boxShadow = "0 0 10px rgba(255, 234, 0, 0.3)"; }
 
                     var innerHTML = '';
                     var ikonkaVevnitr = p.ikona ? `<i class="${p.ikona}"></i>` : '';
@@ -484,22 +479,16 @@
                             var maBuff = hracAktivniBuffy[p.id] !== undefined;
                             if (maBuff) { tlacitka += `<span style="font-size:0.6rem; color:#00e676; font-weight:bold; width:100%;">Aktivní (${Math.ceil(hracAktivniBuffy[p.id]/60)} m)</span>`; } 
                             else { tlacitka += `<button class="buy-btn" onclick="koupitPredmet('${p.id}', ${p.cena}, event)">Aktivovat ${p.cena}🪙</button>`; }
-                        } else if (klic === 'consumable') {
-                            tlacitka += `<button class="buy-btn" onclick="koupitPredmet('${p.id}', ${p.cena}, event)">Koupit ${p.cena}🪙</button>`;
-                        } else {
+                        } else if (klic === 'consumable') { tlacitka += `<button class="buy-btn" onclick="koupitPredmet('${p.id}', ${p.cena}, event)">Koupit ${p.cena}🪙</button>`; } 
+                        else {
                             if (!jeZakoupen) { tlacitka += `<button class="buy-btn" onclick="koupitPredmet('${p.id}', ${p.cena}, event)">Koupit ${p.cena}🪙</button>`; } 
                             else if (!jeNasazen) { tlacitka += `<button class="equip-btn" onclick="zmenObleceni('${p.typ}', '${p.id}', event)">Obléct</button>`; } 
                             else { tlacitka += `<button class="unequip-btn" onclick="zmenObleceni('${p.typ}', '', event)">Sundat</button>`; }
-
                             var activeClass = jeVNahledu ? 'active' : '';
                             tlacitka += `<button class="preview-btn ${activeClass}" onclick="zobrazNahled('${p.typ}', '${p.id}', event)"><i class="fas fa-eye"></i></button>`;
                         }
                     }
-                    tlacitka += '</div>';
-                    innerHTML += tlacitka;
-
-                    item.innerHTML = innerHTML;
-                    grid.appendChild(item);
+                    tlacitka += '</div>'; innerHTML += tlacitka; item.innerHTML = innerHTML; grid.appendChild(item);
                 });
                 container.appendChild(grid);
             }
@@ -507,9 +496,7 @@
 
         function zmenObleceni(typ, itemId, event) {
             if(event) event.stopPropagation();
-            hracVybaveni[typ] = itemId;
-            nahledVybaveni = null; 
-            aktualizujRozhrani();
+            hracVybaveni[typ] = itemId; nahledVybaveni = null; aktualizujRozhrani();
             fetch('/api/zmenit_obleceni', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ typ: typ, item_id: itemId }) });
         }
 
@@ -524,13 +511,14 @@
                     if (data.vyhra !== undefined && data.vyhra !== null) { showToast(`🎲 Otevřela jsi truhlu! Získáváš neuvěřitelných ${data.vyhra} zlaťáků!`); } 
                     else { showToast("✨ Nákup byl úspěšný!"); }
                     nahledVybaveni = null; aktualizujRozhrani();
-                    fetch('/api/body').then(r => r.json()).then(d => { prekresliMlhu(d.body); });
+                    fetch('/api/body?user_id=' + prihlasenyUzivatelId).then(r => r.json()).then(d => { prekresliMlhu(d.body); });
                 }
             });
         }
 
         function nactiHraceAMapu() {
-            fetch('/api/body').then(res => res.json()).then(data => {
+            if (!prihlasenyUzivatelId) return;
+            fetch('/api/body?user_id=' + prihlasenyUzivatelId).then(res => res.json()).then(data => {
                 if (data.body && data.body.length > 0) {
                     var posledniBod = data.body[data.body.length - 1];
                     if (posledniBod[0] !== 0 && posledniBod[1] !== 0) {
@@ -545,95 +533,117 @@
         }
 
         function toggleGPS() {
-    var btn = document.getElementById('gpsBtn');
-    if (isTracking) {
-        navigator.geolocation.clearWatch(watchId);
-        isTracking = false;
-        btn.innerText = "GPS";
-        btn.classList.remove('active');
-    } else {
-        if (!navigator.geolocation) { alert("GPS selhala."); return; }
-        btn.innerText = "Sleduji";
-        btn.classList.add('active');
-        isTracking = true;
+            var btn = document.getElementById('gpsBtn');
+            if (isTracking) {
+                navigator.geolocation.clearWatch(watchId);
+                isTracking = false; btn.innerText = "GPS"; btn.classList.remove('active');
+            } else {
+                if (!navigator.geolocation) { alert("GPS selhala."); return; }
+                btn.innerText = "Sleduji"; btn.classList.add('active'); isTracking = true;
 
-        watchId = navigator.geolocation.watchPosition(
-            function(pos) {
-                var lat = pos.coords.latitude;
-                var lng = pos.coords.longitude;
-                var smer = pos.coords.heading; // Tady získáme směr chůze (0-360 stupňů)
+                watchId = navigator.geolocation.watchPosition(
+                    function(pos) {
+                        var lat = pos.coords.latitude; var lng = pos.coords.longitude; var smer = pos.coords.heading;
+                        if (lat !== 0 && lng !== 0) {
+                            map.setView([lat, lng], 16);
+                            if (!userMarker) { userMarker = L.marker([lat, lng], {icon: ziskejIkonyHrace()}).addTo(map); } 
+                            else { userMarker.setLatLng([lat, lng]); }
 
-                if (lat !== 0 && lng !== 0) {
-                    map.setView([lat, lng], 16);
-                    
-                    // 1. Posuneme postavičku na mapě
-                    if (!userMarker) {
-                        userMarker = L.marker([lat, lng], {icon: ziskejIkonyHrace()}).addTo(map);
-                    } else {
-                        userMarker.setLatLng([lat, lng]);
-                    }
-
-                    // 2. NOVÉ: Otočíme postavičku po směru chůze
-                    if (smer !== null && !isNaN(smer)) {
-                        // Dáme Leafletu milisekundu na překreslení polohy, pak ho otočíme
-                        setTimeout(function() {
-                            var ikonka = userMarker.getElement();
-                            if (ikonka) {
-                                // Nastavíme střed otáčení doprostřed obrázku
-                                ikonka.style.transformOrigin = 'center center';
-                                var puvodniTransform = ikonka.style.transform;
-                                
-                                // Očistíme staré otočení a přidáme nové podle GPS
-                                puvodniTransform = puvodniTransform.replace(/ rotate\(.*?\)/g, '');
-                                ikonka.style.transform = puvodniTransform + ' rotate(' + smer + 'deg)';
+                            if (smer !== null && !isNaN(smer)) {
+                                setTimeout(function() {
+                                    var ikonka = userMarker.getElement();
+                                    if (ikonka) {
+                                        ikonka.style.transformOrigin = 'center center';
+                                        var puvodniTransform = ikonka.style.transform;
+                                        puvodniTransform = puvodniTransform.replace(/ rotate\(.*?\)/g, '');
+                                        ikonka.style.transform = puvodniTransform + ' rotate(' + smer + 'deg)';
+                                    }
+                                }, 50); 
                             }
-                        }, 50); 
-                    }
 
-                    // 3. Loot a servery (zbytek zůstává stejný)
-                    if (typeof doplnLoot === "function") doplnLoot(lat, lng);
-                    if (typeof zkontrolujKolizeSLootem === "function") zkontrolujKolizeSLootem(lat, lng);
+                            if (typeof doplňLoot === "function") doplňLoot(lat, lng);
+                            if (typeof zkontrolujKolizeSLootem === "function") zkontrolujKolizeSLootem(lat, lng);
 
-                    fetch('/api/ulozit', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ lat: lat, lng: lng })
-                    })
-                    .then(res => {
-                        if (!res.ok) throw new Error('Chyba serveru: ' + res.status);
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data.stav) {
-                            hracLevel = data.stav.level;
-                            hracXp = data.stav.xp;
-                            if (data.stav.xp_potreba) hracXpPotreba = data.stav.xp_potreba;
+                            if (prihlasenyUzivatelId) {
+                                fetch('/api/ulozit', {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ lat: lat, lng: lng, user_id: prihlasenyUzivatelId })
+                                }).then(res => { if (!res.ok) throw new Error('Chyba serveru: ' + res.status); return res.json(); })
+                                .then(data => {
+                                    if (data.stav) { hracLevel = data.stav.level; hracXp = data.stav.xp; if (data.stav.xp_potreba) hracXpPotreba = data.stav.xp_potreba; }
+                                    aktualizujRozhrani();
+                                    if (data.vsechny_body) { prekresliMlhu(data.vsechny_body); }
+                                }).catch(err => { alert("Chyba ukládání postupu: " + err.message); });
+                            }
                         }
-                        if (typeof aktualizujRozhrani === "function") aktualizujRozhrani();
-                        
-                        if (data.vsechny_body) {
-                            prekresliMlhu(data.vsechny_body);
-                        }
-                    })
-                    .catch(err => {
-                        alert("Chyba ukládání postupu: " + err.message);
+                    },
+                    function(err) { console.warn('GPS varování: ' + err.message); },
+                    { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }
+                );
+            }
+        }
+
+        // --- ZAJÍMAVÁ MÍSTA (VRCHOLOVÁ KNIHA) ---
+        function nactiZajimavosti() {
+            fetch('/api/zajimavosti').then(res => res.json()).then(data => {
+                data.forEach(misto => {
+                    var marker = L.marker([misto.lat, misto.lng]).addTo(map);
+                    var obsahBubliny = `
+                        <div style="text-align: center;">
+                            <b>${misto.nazev}</b><br><span style="font-size: 12px; color: #555;">${misto.popis}</span><br><br>
+                            <button onclick="otevriKnihu(${misto.id}, ${misto.lat}, ${misto.lng}, '${misto.nazev}')" style="background: #00d2ff; border: none; padding: 8px; border-radius: 5px; cursor: pointer; color: black; font-weight: bold;">
+                                Otevřít knihu
+                            </button>
+                        </div>
+                    `;
+                    marker.bindPopup(obsahBubliny);
+                });
+            });
+        }
+
+        function otevriKnihu(id, mistoLat, mistoLng, nazev) {
+            if (!userMarker) { alert("Nejdřív musím najít tvou polohu podle GPS! Klikni na Sleduji."); return; }
+            var vzdalenost = map.distance(userMarker.getLatLng(), [mistoLat, mistoLng]);
+            if (vzdalenost > 50) { alert("Jsi moc daleko! Jsi " + Math.round(vzdalenost) + " metrů daleko. Musíš přijít blíž."); return; }
+            
+            aktualniZajimavostId = id;
+            document.getElementById('kniha-nazev').innerText = "Zápisník: " + nazev;
+            document.getElementById('kniha-screen').style.display = 'flex';
+            nactiVzkazy();
+        }
+
+        function nactiVzkazy() {
+            var box = document.getElementById('kniha-zapisy'); box.innerHTML = "<i>Načítám zápisy...</i>";
+            fetch('/api/zapisnik?zajimavost_id=' + aktualniZajimavostId).then(res => res.json()).then(data => {
+                box.innerHTML = "";
+                if (data.length === 0) { box.innerHTML = "<i>Zatím tu nikdo nebyl. Buď první!</i>"; } 
+                else {
+                    data.forEach(zapis => {
+                        box.innerHTML += `
+                        <div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 8px;">
+                            <span style="color: #00d2ff; font-weight: bold;">${zapis.jmeno}</span> 
+                            <span style="font-size: 11px; color: #888;">(${zapis.datum})</span><br>
+                            ${zapis.vzkaz}
+                        </div>`;
                     });
                 }
-            },
-            function(err) {
-                console.warn('GPS varování: ' + err.message);
-            },
-            { 
-                enableHighAccuracy: true, 
-                maximumAge: 2000, 
-                timeout: 5000 
-            }
-        );
-    }
-}
+            });
+        }
 
-        nactiHraceAMapu();
-        aktualizujRozhrani();
+        function ulozitVzkaz() {
+            var vstupText = document.getElementById('kniha-novy-vzkaz'); var vzkaz = vstupText.value;
+            if (!vzkaz) { alert("Napiš něco!"); return; }
+            fetch('/api/zapisnik', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ zajimavost_id: aktualniZajimavostId, user_id: prihlasenyUzivatelId, vzkaz: vzkaz })
+            }).then(() => { vstupText.value = ""; nactiVzkazy(); });
+        }
+
+        function zavritKnihu() { document.getElementById('kniha-screen').style.display = 'none'; }
+
+        // --- INICIALIZACE PO ZAPNUTÍ (Před přihlášením) ---
+        aktualizujRozhrani(); // Načte jen vzhled postavičky a tlačítka, mapu NE
+
     </script>
 </body>
 </html>
