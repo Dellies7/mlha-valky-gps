@@ -102,6 +102,10 @@
         .buy-btn:hover, .equip-btn:hover, .unequip-btn:hover { filter: brightness(1.15); }
 
         .leaflet-top { top: 100px; }
+
+        .leaflet-marker-icon {
+    transition: transform 1.5s linear;
+}
     </style>
 </head>
 <body>
@@ -541,27 +545,78 @@
         }
 
         function toggleGPS() {
-            var btn = document.getElementById('gpsBtn');
-            if (isTracking) { navigator.geolocation.clearWatch(watchId); isTracking = false; btn.innerText = "GPS"; btn.classList.remove('active'); } 
-            else {
-                if (!navigator.geolocation) { alert("GPS selhala."); return; }
-                btn.innerText = "Sleduji"; btn.classList.add('active'); isTracking = true;
-                watchId = navigator.geolocation.watchPosition(pos => {
-                    var lat = pos.coords.latitude, lng = pos.coords.longitude;
-                    if (lat !== 0 && lng !== 0) {
-                        map.setView([lat, lng], 16);
-                        if (!userMarker) { userMarker = L.marker([lat, lng], {icon: ziskejIkonyHrace()}).addTo(map); } 
-                        else { userMarker.setLatLng([lat, lng]); }
-                        doplňLoot(lat, lng); zkontrolujKolizeSLootem(lat, lng);
-                        fetch('/api/body', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: lat, lng: lng }) })
-                        .then(res => res.json()).then(data => {
-                            hracLevel = data.stav.level; hracXp = data.stav.xp; hracXpPotreba = data.stav.xp_potreba; hracCelkemXp = data.stav.celkem_xp; celkovaVzdalenost = data.stav.vzdalenost; hracAktivniBuffy = data.stav.aktivni_buffy;
-                            aktualizujRozhrani(); prekresliMlhu(data.vsechny_body);
-                        });
+    var btn = document.getElementById('gpsBtn');
+    if (isTracking) {
+        navigator.geolocation.clearWatch(watchId);
+        isTracking = false;
+        btn.innerText = "GPS";
+        btn.classList.remove('active');
+    } else {
+        if (!navigator.geolocation) { alert("GPS selhala."); return; }
+        btn.innerText = "Sleduji";
+        btn.classList.add('active');
+        isTracking = true;
+
+        watchId = navigator.geolocation.watchPosition(
+            function(pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+
+                if (lat !== 0 && lng !== 0) {
+                    map.setView([lat, lng], 16);
+                    
+                    if (!userMarker) {
+                        userMarker = L.marker([lat, lng], {icon: ziskejIkonyHrace()}).addTo(map);
+                    } else {
+                        userMarker.setLatLng([lat, lng]);
                     }
-                }, err => console.error(err), { enableHighAccuracy: true });
+
+                    // Tvé původní funkce pro loot (pokud tam máš ještě něco dalšího, připiš si to sem)
+                    if (typeof doplnLoot === "function") doplnLoot(lat, lng);
+                    if (typeof zkontrolujKolizeSLootem === "function") zkontrolujKolizeSLootem(lat, lng);
+
+                    // Komunikace se serverem a odkrývání mlhy
+                    fetch('/api/ulozit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lat: lat, lng: lng })
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Chyba serveru: ' + res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        // Aktualizace statistik podle dat ze serveru
+                        if (data.stav) {
+                            hracLevel = data.stav.level;
+                            hracXp = data.stav.xp;
+                            if (data.stav.xp_potreba) hracXpPotreba = data.stav.xp_potreba;
+                        }
+                        if (typeof aktualizujRozhrani === "function") aktualizujRozhrani();
+                        
+                        // Překreslení mlhy
+                        if (data.vsechny_body) {
+                            prekresliMlhu(data.vsechny_body);
+                        }
+                    })
+                    .catch(err => {
+                        // TOHLE NÁM ODHALÍ PROBLÉM! Vyskočí to přímo v mobilu.
+                        alert("Chyba ukládání postupu: " + err.message);
+                    });
+                }
+            },
+            function(err) {
+                console.warn('GPS varování: ' + err.message);
+            },
+            { 
+                // Toto zapne plný výkon GPS čipu v mobilu
+                enableHighAccuracy: true, 
+                maximumAge: 2000, 
+                timeout: 5000 
             }
-        }
+        );
+    }
+}
 
         nactiHraceAMapu();
         aktualizujRozhrani();
