@@ -561,21 +561,39 @@
             function(pos) {
                 var lat = pos.coords.latitude;
                 var lng = pos.coords.longitude;
+                var smer = pos.coords.heading; // Tady získáme směr chůze (0-360 stupňů)
 
                 if (lat !== 0 && lng !== 0) {
                     map.setView([lat, lng], 16);
                     
+                    // 1. Posuneme postavičku na mapě
                     if (!userMarker) {
                         userMarker = L.marker([lat, lng], {icon: ziskejIkonyHrace()}).addTo(map);
                     } else {
                         userMarker.setLatLng([lat, lng]);
                     }
 
-                    // Tvé původní funkce pro loot (pokud tam máš ještě něco dalšího, připiš si to sem)
+                    // 2. NOVÉ: Otočíme postavičku po směru chůze
+                    if (smer !== null && !isNaN(smer)) {
+                        // Dáme Leafletu milisekundu na překreslení polohy, pak ho otočíme
+                        setTimeout(function() {
+                            var ikonka = userMarker.getElement();
+                            if (ikonka) {
+                                // Nastavíme střed otáčení doprostřed obrázku
+                                ikonka.style.transformOrigin = 'center center';
+                                var puvodniTransform = ikonka.style.transform;
+                                
+                                // Očistíme staré otočení a přidáme nové podle GPS
+                                puvodniTransform = puvodniTransform.replace(/ rotate\(.*?\)/g, '');
+                                ikonka.style.transform = puvodniTransform + ' rotate(' + smer + 'deg)';
+                            }
+                        }, 50); 
+                    }
+
+                    // 3. Loot a servery (zbytek zůstává stejný)
                     if (typeof doplnLoot === "function") doplnLoot(lat, lng);
                     if (typeof zkontrolujKolizeSLootem === "function") zkontrolujKolizeSLootem(lat, lng);
 
-                    // Komunikace se serverem a odkrývání mlhy
                     fetch('/api/ulozit', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -586,7 +604,6 @@
                         return res.json();
                     })
                     .then(data => {
-                        // Aktualizace statistik podle dat ze serveru
                         if (data.stav) {
                             hracLevel = data.stav.level;
                             hracXp = data.stav.xp;
@@ -594,13 +611,11 @@
                         }
                         if (typeof aktualizujRozhrani === "function") aktualizujRozhrani();
                         
-                        // Překreslení mlhy
                         if (data.vsechny_body) {
                             prekresliMlhu(data.vsechny_body);
                         }
                     })
                     .catch(err => {
-                        // TOHLE NÁM ODHALÍ PROBLÉM! Vyskočí to přímo v mobilu.
                         alert("Chyba ukládání postupu: " + err.message);
                     });
                 }
@@ -609,7 +624,6 @@
                 console.warn('GPS varování: ' + err.message);
             },
             { 
-                // Toto zapne plný výkon GPS čipu v mobilu
                 enableHighAccuracy: true, 
                 maximumAge: 2000, 
                 timeout: 5000 
