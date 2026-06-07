@@ -4,39 +4,98 @@ import os
 import math
 import time
 import random
+from werkzeug.security import generate_password_hash, check_password_hash
+
+def inicializuj_databazi():
+    conn = sqlite3.connect('mlha_db.sqlite')
+    cursor = conn.cursor()
+    
+    # 1. Tabulka pro uživatele (přihlašovací údaje + jejich herní postup)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS uzivatele (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            jmeno TEXT UNIQUE NOT NULL,
+            heslo TEXT NOT NULL,
+            level INTEGER DEFAULT 1,
+            xp INTEGER DEFAULT 0,
+            zlato INTEGER DEFAULT 0
+        )
+    ''')
+    
+    # 2. Tabulka pro odkryté body (každý bod je svázaný s konkrétním uživatelem)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS odkryta_mista (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            lat REAL NOT NULL,
+            lng REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES uzivatele(id)
+        )
+    ''')
+    
+    # 3. Tabulka pro zajímavá místa (vrcholy, památky)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS zajimavosti (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazev TEXT NOT NULL,
+            lat REAL NOT NULL,
+            lng REAL NOT NULL,
+            popis TEXT
+        )
+    ''')
+    
+    # 4. Tabulka pro zápisník / vrcholovou knihu
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS zapisnik (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            zajimavost_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            vzkaz TEXT NOT NULL,
+            datum TEXT NOT NULL,
+            FOREIGN KEY (zajimavost_id) REFERENCES zajimavosti(id),
+            FOREIGN KEY (user_id) REFERENCES uzivatele(id)
+        )
+    ''')
+    
+    # --- Vložíme testovací bod (Větrník) ---
+    cursor.execute("SELECT * FROM zajimavosti WHERE nazev = 'Výškový bod Větrník'")
+    if not cursor.fetchone():
+        cursor.execute('''
+            INSERT INTO zajimavosti (nazev, lat, lng, popis)
+            VALUES ('Výškový bod Větrník', 48.77814, 14.28116, 'Dosáhl jsi vrcholu Větrník! Zapiš se do zápisníku.')
+        ''')
+    
+    conn.commit()
+    conn.close()
+
+# Zavoláme funkci, aby se nová struktura databáze vytvořila
+inicializuj_databazi()
 
 app = Flask(__name__)
 DB_PATH = 'mlha_db.sqlite'
 
-# OBROVSKÁ DEFINICE PŘEDMĚTŮ VČETNĚ MAZLÍČKŮ A AUR
 DEFINICE_PREDMETU = [
-    # Pokrývka hlavy
     {"id": "h1", "nazev": "Trenérská kšiltovka", "barva": "#ff1744", "typ": "hlava", "req_level": 1, "cena": 0},
     {"id": "h3", "nazev": "Ochranná přilba", "barva": "#00e5ff", "typ": "hlava", "req_level": 5, "cena": 0},
     {"id": "h_vip", "nazev": "Zlatá svatozář (VIP)", "barva": "#ffea00", "typ": "hlava", "req_level": 1, "cena": 50, "premium": True},
     {"id": "h_cyber", "nazev": "Kyber-helma (VIP)", "barva": "#ff0057", "typ": "hlava", "req_level": 1, "cena": 75, "premium": True},
     
-    # Oblečení (Svršky)
     {"id": "o1", "nazev": "Sportovní mikina", "barva": "#2979ff", "typ": "telo", "req_level": 1, "cena": 0},
     {"id": "o3", "nazev": "Kybernetický plášť", "barva": "#00e676", "typ": "telo", "req_level": 6, "cena": 0},
     {"id": "o_vip", "nazev": "Královská zbroj (VIP)", "barva": "#ffd700", "typ": "telo", "req_level": 1, "cena": 100, "premium": True},
     {"id": "o_phoenix", "nazev": "Plášť Fénixe (VIP)", "barva": "#ff3d00", "typ": "telo", "req_level": 1, "cena": 120, "premium": True},
     
-    # Oči a doplňky
     {"id": "d1", "nazev": "Sluneční brýle", "barva": "#ffeb3b", "typ": "oci", "req_level": 2, "cena": 0},
     {"id": "d2", "nazev": "Futuristický vizor", "barva": "#d500f9", "typ": "oci", "req_level": 5, "cena": 0},
     
-    # Zbraně a vybavení
     {"id": "z2", "nazev": "Světelný meč", "barva": "#00e5ff", "typ": "ruka", "req_level": 3, "cena": 0},
     {"id": "z3", "nazev": "Bojová sekera", "barva": "#ff3d00", "typ": "ruka", "req_level": 6, "cena": 0},
     {"id": "z_vip", "nazev": "Božský meč (VIP)", "barva": "#ffffff", "typ": "ruka", "req_level": 1, "cena": 150, "premium": True},
     {"id": "z_hammer", "nazev": "Hromové kladivo (VIP)", "barva": "#00e5ff", "typ": "ruka", "req_level": 1, "cena": 160, "premium": True},
 
-    # Aury a Vizuální efekty
     {"id": "a_fire", "nazev": "Ohnivá Aura (VIP)", "barva": "#ff3d00", "typ": "aura", "req_level": 1, "cena": 200, "premium": True},
     {"id": "a_ice", "nazev": "Ledová Aura (VIP)", "barva": "#00e5ff", "typ": "aura", "req_level": 1, "cena": 200, "premium": True},
 
-    # Široký výběr mazlíčků
     {"id": "pet_coon", "nazev": "Mainská mývalí (VIP)", "barva": "#e65100", "typ": "mazlicek", "req_level": 1, "cena": 350, "premium": True},
     {"id": "pet_fox", "nazev": "Ohnivá liška (VIP)", "barva": "#ff3d00", "typ": "mazlicek", "req_level": 1, "cena": 450, "premium": True},
     {"id": "pet_dragon", "nazev": "Malý drak (VIP)", "barva": "#d500f9", "typ": "mazlicek", "req_level": 1, "cena": 500, "premium": True},
@@ -44,13 +103,11 @@ DEFINICE_PREDMETU = [
     {"id": "pet_wolf", "nazev": "Stínový vlk (VIP)", "barva": "#4a148c", "typ": "mazlicek", "req_level": 1, "cena": 800, "premium": True},
     {"id": "pet_robo", "nazev": "Kyber-Dron (VIP)", "barva": "#00e676", "typ": "mazlicek", "req_level": 1, "cena": 1000, "premium": True},
 
-    # Mapové vychytávky (Platí 60 minut)
     {"id": "m_dalekohled", "nazev": "Dalekohled (+50m Odkrytí)", "barva": "#00e5ff", "typ": "mapa", "req_level": 2, "cena": 40, "premium": True, "ikona": "fas fa-binoculars"},
     {"id": "m_magnet", "nazev": "Magnet (Sběr na 60m)", "barva": "#ffea00", "typ": "mapa", "req_level": 3, "cena": 60, "premium": True, "ikona": "fas fa-magnet"},
     {"id": "m_radar", "nazev": "Radar (Víc truhel)", "barva": "#ff1744", "typ": "mapa", "req_level": 4, "cena": 80, "premium": True, "ikona": "fas fa-satellite-dish"},
     {"id": "m_double", "nazev": "Zlatá horečka (2x Mince)", "barva": "#ffd700", "typ": "mapa", "req_level": 1, "cena": 70, "premium": True, "ikona": "fas fa-angle-double-up"},
     
-    # Lootbox (Spotřební)
     {"id": "c_luck", "nazev": "Truhla Štěstěny (50-300🪙)", "barva": "#ffea00", "typ": "consumable", "req_level": 1, "cena": 100, "premium": True, "ikona": "fas fa-dice"},
 ]
 
@@ -154,30 +211,149 @@ def spocti_rpg_stav():
 def index():
     return render_template('index.html', stav=spocti_rpg_stav(), milniky=DEFINICE_MILNIKU, predmety=DEFINICE_PREDMETU)
 
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    jmeno = data.get('jmeno')
+    heslo = data.get('heslo')
+
+    if not jmeno or not heslo:
+        return jsonify({'chyba': 'Vyplňte jméno a heslo.'}), 400
+
+    conn = sqlite3.connect('mlha_db.sqlite')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT id FROM uzivatele WHERE jmeno = ?', (jmeno,))
+    if cursor.fetchone():
+        conn.close()
+        return jsonify({'chyba': 'Toto jméno už je zabrané, zvolte jiné.'}), 400
+
+    heslo_hash = generate_password_hash(heslo)
+    cursor.execute('INSERT INTO uzivatele (jmeno, heslo) VALUES (?, ?)', (jmeno, heslo_hash))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'zprava': 'Účet byl úspěšně vytvořen!'}), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    jmeno = data.get('jmeno')
+    heslo = data.get('heslo')
+
+    conn = sqlite3.connect('mlha_db.sqlite')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT id, heslo, level, xp, zlato FROM uzivatele WHERE jmeno = ?', (jmeno,))
+    uzivatel = cursor.fetchone()
+    conn.close()
+
+    if uzivatel and check_password_hash(uzivatel[1], heslo):
+        return jsonify({
+            'zprava': 'Přihlášení úspěšné!',
+            'user_id': uzivatel[0],
+            'jmeno': jmeno,
+            'stav': {'level': uzivatel[2], 'xp': uzivatel[3], 'zlato': uzivatel[4]}
+        }), 200
+    else:
+        return jsonify({'chyba': 'Špatné jméno nebo heslo.'}), 401
+
 @app.route('/api/body', methods=['GET'])
 def get_body():
-    conn = get_db_connection()
+    user_id = request.args.get('user_id')
+    
+    if not user_id:
+         return jsonify({'body': []}) 
+
+    conn = sqlite3.connect('mlha_db.sqlite')
     cursor = conn.cursor()
-    cursor.execute("SELECT lat, lng FROM prozkoumana_mista")
-    body = [[row['lat'], row['lng']] for row in cursor.fetchall()]
+    cursor.execute('SELECT lat, lng FROM odkryta_mista WHERE user_id = ?', (user_id,))
+    vsechny_body_hrace = cursor.fetchall()
     conn.close()
-    return jsonify({"body": body})
+
+    body_pro_js = [[b[0], b[1]] for b in vsechny_body_hrace]
+    return jsonify({'body': body_pro_js})
 
 @app.route('/api/ulozit', methods=['POST'])
 def ulozit_bod():
     data = request.get_json() or {}
-    lat, lng = data.get('lat'), data.get('lng')
+    lat = data.get('lat')
+    lng = data.get('lng')
+    user_id = data.get('user_id')
+
+    if not user_id:
+        return jsonify({'chyba': 'Hráč není přihlášen'}), 401
+
     if lat and lng:
-        conn = get_db_connection()
+        conn = sqlite3.connect('mlha_db.sqlite')
         cursor = conn.cursor()
+        
+        # Uložení pro novou osobní mapu hráče
+        cursor.execute("INSERT INTO odkryta_mista (user_id, lat, lng) VALUES (?, ?, ?)", (user_id, lat, lng))
+        # Skryté uložení do původní tabulky, aby ti dál fungovalo získávání XP
         cursor.execute("INSERT INTO prozkoumana_mista (lat, lng) VALUES (?, ?)", (lat, lng))
         conn.commit()
-        cursor.execute("SELECT lat, lng FROM prozkoumana_mista")
-        vsechny_body = [[row['lat'], row['lng']] for row in cursor.fetchall()]
+
+        cursor.execute("SELECT lat, lng FROM odkryta_mista WHERE user_id = ?", (user_id,))
+        vsechny_body = [[row[0], row[1]] for row in cursor.fetchall()]
         conn.close()
     else:
         vsechny_body = []
+        
     return jsonify({"status": "success", "stav": spocti_rpg_stav(), "vsechny_body": vsechny_body})
+
+@app.route('/api/zajimavosti', methods=['GET'])
+def get_zajimavosti():
+    conn = sqlite3.connect('mlha_db.sqlite')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, nazev, lat, lng, popis FROM zajimavosti')
+    mista = cursor.fetchall()
+    conn.close()
+    
+    vysledek = []
+    for misto in mista:
+        vysledek.append({
+            'id': misto[0],
+            'nazev': misto[1],
+            'lat': misto[2],
+            'lng': misto[3],
+            'popis': misto[4]
+        })
+    return jsonify(vysledek)
+
+@app.route('/api/zapisnik', methods=['GET', 'POST'])
+def zapisnik_akce():
+    conn = sqlite3.connect('mlha_db.sqlite')
+    cursor = conn.cursor()
+
+    if request.method == 'GET':
+        misto_id = request.args.get('zajimavost_id')
+        cursor.execute('''
+            SELECT u.jmeno, z.vzkaz, z.datum 
+            FROM zapisnik z 
+            JOIN uzivatele u ON z.user_id = u.id 
+            WHERE z.zajimavost_id = ? 
+            ORDER BY z.id DESC
+        ''', (misto_id,))
+        zapisy = cursor.fetchall()
+        conn.close()
+        
+        vysledek = [{'jmeno': z[0], 'vzkaz': z[1], 'datum': z[2]} for z in zapisy]
+        return jsonify(vysledek)
+
+    if request.method == 'POST':
+        data = request.get_json()
+        misto_id = data.get('zajimavost_id')
+        user_id = data.get('user_id')
+        vzkaz = data.get('vzkaz')
+        datum = time.strftime("%d.%m.%Y %H:%M") 
+
+        cursor.execute('INSERT INTO zapisnik (zajimavost_id, user_id, vzkaz, datum) VALUES (?, ?, ?, ?)', 
+                       (misto_id, user_id, vzkaz, datum))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'zprava': 'Úspěšně zapsáno do knihy!'}), 201
 
 @app.route('/api/zmenit_obleceni', methods=['POST'])
 def zmenit_obleceni():
@@ -235,4 +411,4 @@ def koupit():
     return jsonify({"status": status, "stav": spocti_rpg_stav(), "vyhra": vyhra_z_lootboxu})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True,)
+    app.run(host='0.0.0.0', port=5000, debug=True)
