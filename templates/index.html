@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* PŘIHLAŠOVACÍ OBRAZOVKA */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; font-family: sans-serif; }
         .login-box { background: #1a1a1a; padding: 30px; border-radius: 15px; border: 2px solid #444; text-align: center; width: 80%; max-width: 300px; color: white; }
         .login-box h2 { margin-top: 0; color: #00d2ff; }
@@ -21,7 +20,6 @@
         .register-btn { background: #444; color: #fff; }
         #login-zprava { color: #ff4c4c; font-weight: bold; margin-bottom: 0; }
 
-        /* ZÁKLADNÍ ROZHRANÍ A MAPA */
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background-color: #06060a; color: #fff; overflow: hidden; }
         #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; background: #000; }
@@ -47,7 +45,6 @@
         .panel-header h2 { margin: 0; font-size: 1.1rem; color: #00e5ff; text-transform: uppercase; letter-spacing: 1px; }
         .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
 
-        /* AVATAR A OBCHOD */
         .avatar-render-box { background: radial-gradient(circle, #101026 0%, #040408 100%); border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.15); height: 280px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
         .preview-badge { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #ffea00; color: #000; font-size: 0.65rem; font-weight: 900; padding: 4px 12px; border-radius: 10px; display: none; box-shadow: 0 0 10px rgba(255, 234, 0, 0.5); letter-spacing: 0.5px; z-index: 5; }
         .clear-preview-btn { position: absolute; bottom: 12px; right: 12px; background: #ff1744; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.65rem; font-weight: bold; cursor: pointer; display: none; box-shadow: 0 2px 8px rgba(255, 23, 68, 0.4); text-transform: uppercase; z-index: 5; }
@@ -61,7 +58,6 @@
         .pet-ground { animation: petGroundAnim 3s infinite ease-in-out; }
         .avatar-breathe { animation: breathe 3s ease-in-out infinite; transform-origin: bottom center; }
 
-        /* LEAFLET ZNAČKY A NOTIFIKACE */
         .custom-leaflet-avatar { background: transparent; border: none; }
         .pogo-marker-container { position: relative; width: 120px; height: 120px; display: flex; justify-content: center; align-items: center; }
         .pogo-pulse-ring { position: absolute; top: 20px; width: 85px; height: 85px; border: 3px solid #00e5ff; border-radius: 50%; background: rgba(0, 229, 255, 0.05); animation: pogoPulse 2.2s infinite ease-out; pointer-events: none; z-index: 1; }
@@ -105,6 +101,18 @@
 
         .leaflet-top { top: 100px; }
         .leaflet-marker-icon { transition: transform 1.5s linear; }
+
+        @media (max-width: 600px) {
+            .top-panel { min-width: 95%; width: 95%; padding: 8px 12px; top: 10px; }
+            .stats-row { gap: 5px; flex-wrap: wrap; justify-content: center; }
+            .panel-btn { padding: 6px 8px; font-size: 0.65rem; }
+            .level-badge, .distance-badge, .coin-badge { font-size: 0.75rem; }
+            .side-panel { width: 100%; right: -100%; }
+            .side-panel.open { right: 0; }
+            .avatar-render-box { height: 180px; margin-bottom: 10px; }
+            .wardrobe-grid { grid-template-columns: repeat(2, 1fr); }
+            .login-box { width: 95%; padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -140,7 +148,10 @@
 
     <div class="top-panel">
         <div class="stats-row">
-            <button class="panel-btn" onclick="togglePanel('wardrobePanel')"><i class="fas fa-store"></i> Obchod & Styl</button>
+            <button class="panel-btn" onclick="togglePanel('denikPanel')"><i class="fas fa-book-open"></i> Deník</button>
+            <button class="panel-btn" onclick="togglePanel('bankPanel')"><i class="fas fa-university"></i> Banka</button>
+            <button class="panel-btn" onclick="togglePanel('garazPanel')"><i class="fas fa-motorcycle"></i> Garáž</button>
+            <button class="panel-btn" onclick="togglePanel('wardrobePanel')"><i class="fas fa-store"></i> Obchod</button>
             <div class="level-badge" id="levelBadge">LVL 1</div>
             <div class="distance-badge" id="distanceBadge">0.00 KM</div>
             <div class="coin-badge" id="coinAmount"><i class="fas fa-coins"></i> <span>0</span></div>
@@ -148,7 +159,7 @@
         </div>
         <div class="xp-container">
             <div class="xp-bar-bg"><div class="xp-bar-fill" id="xpBar"></div></div>
-            <div class="xp-text" id="xpText">0 / 100 XP</div>
+            <div class="xp-text" id="xpText">0 / 500 XP</div>
         </div>
     </div>
 
@@ -164,11 +175,42 @@
                 <div id="avatarBigPreview"></div>
             </div>
             <button class="rewarded-ad-btn" onclick="spustitReklamu()">
-                <i class="fas fa-play-circle"></i> Získat +5 zlaťáků (Reklama)
+                <i class="fas fa-play-circle"></i> Získat +500 zlaťáků (Test)
             </button>
             <div id="wardrobeContent"></div>
         </div>
     </div>
+
+    <div class="side-panel" id="denikPanel">
+        <div class="panel-header">
+            <h2>Deník výprav</h2>
+            <button class="panel-btn" onclick="togglePanel('denikPanel')">X</button>
+        </div>
+        <div class="panel-content" id="milnikyContent"></div>
+    </div>
+
+    <div class="side-panel" id="bankPanel">
+        <div class="panel-header">
+            <h2>Místní Banka</h2>
+            <button class="panel-btn" onclick="togglePanel('bankPanel')">X</button>
+        </div>
+        <div class="panel-content" id="bankaContent"></div>
+    </div>
+
+    <div class="side-panel" id="garazPanel">
+        <div class="panel-header">
+            <h2>Garáž</h2>
+            <button class="panel-btn" onclick="togglePanel('garazPanel')">X</button>
+        </div>
+        <div class="panel-content" id="garazContent"></div>
+    </div>
+
+    <div class="card">
+    <h3>Dopravní prostředek</h3>
+    <p>Aktivní: <strong id="nazev-stroje">Pěší chůze</strong></p>
+    <div id="seznam-stroju" class="grid-layout">
+        </div>
+</div>
 
     <script>
         var prihlasenyUzivatelId = null;
@@ -183,20 +225,23 @@
         var watchId = null;
         var isTracking = false;
 
-        // Načtení dat ze serveru (Jinja)
-        var hracLevel = {{ stav.level|default(1) }};
-        var hracXp = {{ stav.xp|default(0) }};
-        var hracXpPotreba = {{ stav.xp_potreba|default(100) }};
-        var hracCelkemXp = {{ stav.celkem_xp|default(0) }};
-        var celkovaVzdalenost = {{ stav.vzdalenost|default(0.0) }};
-        var hracMince = {{ stav.mince|default(0) }};
-        var hracZakoupene = {{ stav.zakoupene|tojson|default('[]') }};
-        var hracAktivniBuffy = {{ stav.aktivni_buffy|tojson|default('{}') }};
-        var hracVybaveni = {{ stav.vybaveni|tojson|default('{}') }};
+        var hracLevel = 1; var hracXp = 0; var hracXpPotreba = 500; var hracCelkemXp = 0;
+        var celkovaVzdalenost = 0.0; var hracMince = 0; var hracZakoupene = [];
+        var hracAktivniBuffy = {}; var hracVybaveni = {};
+        
+        var odemceneMilnikyHrace = [];
+        var denniStav = {truhly: 0, nakupy: 0, zapisy: 0, odmena_vybrana: 0};
+        var hracArtefakty = [];
+        var bankaStav = {zainvestovano: 0, lze_vybrat: false};
+        var hracDily = [];
+        var strojSlozen = false;
+        
         var predmetySef = {{ predmety|tojson|default('[]') }};
+        var vsechnyMilniky = {{ milniky|tojson|default('[]') }};
+        var artefaktySef = {{ artefakty|tojson|default('[]') }};
+        var dilySef = {{ dily|tojson|default('[]') }}; 
         var nahledVybaveni = null; 
 
-        // Notifikace a reklama
         function showToast(msg) {
             var x = document.getElementById("toast");
             x.innerText = msg; x.className = "show";
@@ -212,12 +257,29 @@
                 timeLeft--; timerEl.innerText = timeLeft;
                 if(timeLeft <= 0) {
                     clearInterval(countdown); overlay.style.display = 'none';
-                    vyberOdmenu(5, "📺 Děkujeme! Získáváš +5 zlaťáků.");
+                    vyberOdmenu(500, "📺 TESTOVACÍ ODMĚNA! Získáváš +500 zlaťáků.");
                 }
             }, 1000);
         }
 
-        // --- PŘIHLAŠOVACÍ SYSTÉM ---
+        function obnovStavHrace() {
+            if (!prihlasenyUzivatelId) return;
+            fetch('/api/stav?user_id=' + prihlasenyUzivatelId)
+            .then(res => res.json())
+            .then(data => {
+                hracLevel = data.level; hracXp = data.xp; hracXpPotreba = data.xp_potreba; hracCelkemXp = data.celkem_xp;
+                celkovaVzdalenost = data.vzdalenost; hracMince = data.mince; hracZakoupene = data.zakoupene;
+                hracAktivniBuffy = data.aktivni_buffy; hracVybaveni = data.vybaveni;
+                odemceneMilnikyHrace = data.odemcene_milniky;
+                denniStav = data.denni_stav;
+                hracArtefakty = data.nalezene_artefakty;
+                bankaStav = data.banka_stav;
+                hracDily = data.nalezene_dily;
+                strojSlozen = data.stroj_slozen;
+                aktualizujRozhrani();
+            });
+        }
+
         function registrovatSe() {
             var jmeno = document.getElementById('login-jmeno').value;
             var heslo = document.getElementById('login-heslo').value;
@@ -242,13 +304,7 @@
                     prihlasenyUzivatelId = data.user_id;
                     localStorage.setItem('hrac_id', data.user_id);
                     document.getElementById('login-screen').style.display = 'none';
-                    hracLevel = data.stav.level;
-                    hracXp = data.stav.xp;
-                    
-                    // Nyní stáhneme mapu a zajímavosti!
-                    nactiHraceAMapu();
-                    nactiZajimavosti();
-                    aktualizujRozhrani();
+                    obnovStavHrace(); nactiHraceAMapu(); nactiZajimavosti();
                 }
             });
         }
@@ -258,18 +314,14 @@
             if (ulozeneId) {
                 prihlasenyUzivatelId = ulozeneId;
                 document.getElementById('login-screen').style.display = 'none';
-                // Nyní stáhneme mapu a zajímavosti!
-                nactiHraceAMapu();
-                nactiZajimavosti();
+                obnovStavHrace(); nactiHraceAMapu(); nactiZajimavosti();
             }
         });
 
-        // --- AVATAR A VZHLED ---
         function generujAvatarSVG(vyb = hracVybaveni) {
             var hlava = predmetySef.find(p => p.id === vyb.hlava); var telo = predmetySef.find(p => p.id === vyb.telo);
             var oci = predmetySef.find(p => p.id === vyb.oci); var ruka = predmetySef.find(p => p.id === vyb.ruka);
             var aura = predmetySef.find(p => p.id === vyb.aura); var pet = predmetySef.find(p => p.id === vyb.mazlicek);
-
             var cHlava = hlava ? hlava.barva : "transparent"; var cTelo = telo ? telo.barva : "#1976d2"; 
             var cOci = oci ? oci.barva : "transparent"; var cRuka = ruka ? ruka.barva : "transparent";
             var cAura = aura ? aura.barva : "transparent";
@@ -317,16 +369,11 @@
             `;
         }
 
-        // --- MAPA A FOG OF WAR ---
         function prekresliMlhu(navstivenaMista) {
             fogLayer.clearLayers();
-            
-            // 1. Vždy si připravíme černý obdélník přes celý svět
             var polygonCoords = [[[-90, -180], [90, -180], [90, 180], [-90, 180], [-90, -180]]];
-            
             var platnaMista = navstivenaMista.filter(m => m[0] !== 0 && m[1] !== 0);
             
-            // 2. Pokud už máš nějaké kroky, vyřízneme do tmy díry
             if (platnaMista.length > 0) {
                 var radiusMetry = hracAktivniBuffy['m_dalekohled'] !== undefined ? 120 : 70;
                 try {
@@ -345,11 +392,7 @@
                     });
                 } catch(e) { console.error("Mlha:", e); }
             }
-
-            // 3. Vykreslíme výsledek na mapu (buď celočerný, nebo s dírami)
-            L.polygon(polygonCoords, {
-                color: 'transparent', fillColor: '#000000', fillOpacity: 0.98, smoothFactor: 1
-            }).addTo(fogLayer);
+            L.polygon(polygonCoords, { color: 'transparent', fillColor: '#000000', fillOpacity: 0.98, smoothFactor: 1 }).addTo(fogLayer);
         }
 
         function doplňLoot(lat, lng) {
@@ -367,10 +410,24 @@
                     var uhel = Math.random() * Math.PI * 2;
                     var offsetLat = (vzdalenostMetry / 111320) * Math.cos(uhel);
                     var offsetLng = (vzdalenostMetry / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(uhel);
+                    
+                    // --- ZMĚNĚNÁ LOGIKA GENEROVÁNÍ MAPY DLE AKTIVNÍCH BUFFŮ ---
+                    var sanceArtefakt = hracAktivniBuffy['m_art_radar'] !== undefined ? 0.30 : 0.15;
+                    var sanceDil = hracAktivniBuffy['m_stroj_radar'] !== undefined ? 0.30 : 0.15;
+                    
+                    var rnd = Math.random();
+                    var isArtefakt = (hracLevel >= 6 && rnd < sanceArtefakt);
+                    var isDil = (hracLevel >= 8 && !isArtefakt && rnd < (sanceArtefakt + sanceDil));
+                    
+                    var iconHtml = '<div style="font-size:30px;">🎁</div>';
+                    if (isArtefakt) iconHtml = '<div style="font-size:30px; filter: drop-shadow(0 0 10px #ff3d00);">🏺</div>';
+                    else if (isDil) iconHtml = '<div style="font-size:30px; filter: drop-shadow(0 0 10px #00e5ff);">⚙️</div>';
+                    
                     var chest = L.marker([lat + offsetLat, lng + offsetLng], { 
-                        icon: L.divIcon({ className: 'loot-marker', html: '<i class="fas fa-box-open" style="color: #ffea00;"></i>', iconSize: [40, 40] }) 
+                        icon: L.divIcon({ className: 'loot-marker', html: iconHtml, iconSize: [40, 40] }) 
                     });
-                    chest.property('itemType', 'chest');
+                    
+                    chest.property('itemType', isArtefakt ? 'artefakt' : (isDil ? 'dil' : 'chest'));
                     chest.addTo(lootLayer);
                 }
             }
@@ -383,18 +440,28 @@
             var polomerSberu = hracAktivniBuffy['m_magnet'] !== undefined ? 60 : 30; 
             lootLayer.eachLayer(function(marker) {
                 if (hracPoloha.distanceTo(marker.getLatLng()) < polomerSberu) { 
+                    var typLootu = marker.property('itemType');
                     lootLayer.removeLayer(marker); 
-                    var nasobitel = hracAktivniBuffy['m_double'] !== undefined ? 2 : 1;
-                    vyberOdmenu(20 * nasobitel, nasobitel === 2 ? "📦 Našla jsi truhlu! +40 zlaťáků (2x BONUS)" : "📦 Našla jsi truhlu! +20 zlaťáků");
+                    
+                    if (typLootu === 'artefakt') {
+                        fetch('/api/sebrat_artefakt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({user_id: prihlasenyUzivatelId}) })
+                        .then(res => res.json()).then(data => { obnovStavHrace(); showToast(data.zprava); });
+                    } else if (typLootu === 'dil') {
+                        fetch('/api/sebrat_dil', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({user_id: prihlasenyUzivatelId}) })
+                        .then(res => res.json()).then(data => { obnovStavHrace(); showToast(data.zprava); });
+                    } else {
+                        var nasobitel = hracAktivniBuffy['m_double'] !== undefined ? 2 : 1;
+                        vyberOdmenu(20 * nasobitel, nasobitel === 2 ? "📦 Našla jsi truhlu! +40 zlaťáků (2x BONUS)" : "📦 Našla jsi truhlu! +20 zlaťáků");
+                    }
                 }
             });
         }
 
         function vyberOdmenu(hodnota, zprava) {
-            fetch('/api/vybrat_odmenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({hodnota: hodnota}) })
+            fetch('/api/vybrat_odmenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({hodnota: hodnota, user_id: prihlasenyUzivatelId}) })
             .then(res => res.json()).then(data => {
-                hracMince = data.stav.mince;
-                aktualizujRozhrani(); showToast(zprava);
+                obnovStavHrace();
+                showToast(zprava);
                 document.getElementById('coinAmount').style.transform = 'scale(1.5)';
                 setTimeout(() => document.getElementById('coinAmount').style.transform = 'scale(1)', 300);
             });
@@ -408,9 +475,295 @@
             });
         }
 
+        function vykresliBanku() {
+            var box = document.getElementById('bankaContent');
+            var html = '';
+            
+            if (hracLevel < 5) {
+                html += `
+                    <div style="background: rgba(255, 23, 68, 0.1); border: 1px dashed #ff1744; padding: 15px; text-align: center; border-radius: 10px; color: #ff1744; margin-top: 20px;">
+                        <i class="fas fa-lock" style="font-size: 1.5rem; margin-bottom: 8px;"></i><br>
+                        <b>Odemkne se na Levelu 5</b><br>
+                        <span style="font-size: 0.75rem; color: #888;">Prokaž své zkušenosti na mapě, ať si získáš důvěru místních bankéřů a můžeš začít budovat své portfolio.</span>
+                    </div>`;
+            } else {
+                var zisk = Math.max(1, Math.floor(bankaStav.zainvestovano * 0.05));
+                if (bankaStav.zainvestovano === 0) zisk = 0;
+
+                html += `
+                    <div style="background: #111118; border: 1px solid #00d2ff; padding: 20px; border-radius: 10px; text-align: center;">
+                        <i class="fas fa-piggy-bank" style="font-size: 3rem; color: #ffea00; margin-bottom: 15px;"></i>
+                        <h3 style="margin: 0 0 10px 0; color: #00d2ff;">Tvé portfolio</h3>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #fff;">${bankaStav.zainvestovano} <i class="fas fa-coins" style="color: #ffea00;"></i></div>
+                        <div style="font-size: 0.8rem; color: #888; margin-top: 5px;">Denní dividenda: 5 % (cca ${zisk} 🪙)</div>
+                    </div>
+                `;
+
+                if (bankaStav.lze_vybrat) {
+                    html += `<button onclick="akceBanka('vybrat_zisk')" style="width:100%; padding: 12px; background: #00e676; color:#000; font-weight:bold; border:none; border-radius:8px; margin-top:15px; cursor:pointer; font-size: 1rem;"><i class="fas fa-hand-holding-usd"></i> Vybrat dnešní dividendu (+${zisk})</button>`;
+                } else if (bankaStav.zainvestovano > 0) {
+                    html += `<div style="text-align:center; padding:15px; color:#888; font-size:0.85rem;"><i class="fas fa-clock"></i> Dnešní příjem už máš v kapse. Zítra bude další.</div>`;
+                }
+
+                html += `
+                    <div style="margin-top: 25px; background: #1a1a24; padding: 15px; border-radius: 10px;">
+                        <h4 style="margin: 0 0 10px 0; color: #fff;">Zainvestovat zlaťáky</h4>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="castkaVklad" placeholder="Částka z peněženky" style="width: 100%; padding: 10px; border-radius: 5px; border: none; background: #000; color: #fff;" min="1" max="${hracMince}">
+                            <button onclick="akceBanka('vlozit')" style="padding: 10px 15px; background: #00d2ff; color: #000; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Vložit</button>
+                        </div>
+                        <div style="font-size: 0.7rem; color: #888; margin-top: 8px;">Uložené mince už nelze vybrat zpět, ale trvale ti budou generovat pasivní denní zisk.</div>
+                    </div>
+                `;
+            }
+            box.innerHTML = html;
+        }
+
+        function akceBanka(akce) {
+            var castka = 0;
+            if (akce === 'vlozit') {
+                castka = parseInt(document.getElementById('castkaVklad').value);
+                if (isNaN(castka) || castka <= 0) { alert("Zadej platnou částku!"); return; }
+                if (castka > hracMince) { alert("Nemáš dostatek zlaťáků v peněžence!"); return; }
+            }
+
+            fetch('/api/banka_akce', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: prihlasenyUzivatelId, akce: akce, castka: castka })
+            }).then(res => res.json()).then(data => {
+                showToast(data.zprava);
+                obnovStavHrace();
+            });
+        }
+
+        function vykresliGaraz() {
+            var box = document.getElementById('garazContent');
+            var html = '';
+            
+            if (hracLevel < 8) {
+                html += `
+                    <div style="background: rgba(255, 23, 68, 0.1); border: 1px dashed #ff1744; padding: 15px; text-align: center; border-radius: 10px; color: #ff1744; margin-top: 20px;">
+                        <i class="fas fa-lock" style="font-size: 1.5rem; margin-bottom: 8px;"></i><br>
+                        <b>Odemkne se na Levelu 8</b><br>
+                        <span style="font-size: 0.75rem; color: #888;">Garáž je zatím zavřená. Jakmile dosáhneš 8. levelu, začneš v mlze nacházet mechanické součástky ke složení vlastního stroje.</span>
+                    </div>`;
+            } else if (strojSlozen) {
+                html += `
+                    <div style="background: #111118; border: 1px solid #00e676; padding: 20px; border-radius: 10px; text-align: center;">
+                        <i class="fas fa-motorcycle" style="font-size: 4rem; color: #00e676; margin-bottom: 15px;"></i>
+                        <h3 style="margin: 0 0 10px 0; color: #fff;">Stroj je plně funkční!</h3>
+                        <div style="font-size: 0.85rem; color: #00e676; font-weight: bold; background: rgba(0, 230, 118, 0.1); padding: 8px; border-radius: 5px;">
+                            AKTIVNÍ BONUS: Tvé nachozené kilometry se nyní počítají 1.5x rychleji!
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += '<div style="color: #aaa; font-size: 0.85rem; margin-bottom: 15px;">Sesbírej všechny díly ztracené v mlze a slož svůj stroj. Získáš obrovskou výhodu do pohybu! (Duplikáty můžeš rovnou prodávat!)</div>';
+                
+                var dilyHtml = "";
+                dilySef.forEach(d => {
+                    var maDil = hracDily.includes(d.id);
+                    var ramBarva = maDil ? "#00e5ff" : "#333";
+                    var nadpisBarva = maDil ? "#fff" : "#666";
+                    var ikonaStav = maDil ? "none" : "grayscale(100%) opacity(0.3)";
+                    
+                    dilyHtml += `
+                        <div style="background: #111118; border: 1px solid ${ramBarva}; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; gap: 12px;">
+                            <div style="font-size: 28px; filter: ${ikonaStav};">${d.ikona}</div>
+                            <div style="color: ${nadpisBarva}; font-weight: bold; font-size: 0.9rem;">${d.nazev}</div>
+                            <div style="margin-left: auto; color: ${maDil ? '#00e676' : '#ff1744'};"><i class="fas ${maDil ? 'fa-check' : 'fa-times'}"></i></div>
+                        </div>
+                    `;
+                });
+                html += dilyHtml;
+                
+                if (hracDily.length >= dilySef.length) {
+                    html += `<button onclick="slozitStroj()" style="width:100%; padding: 15px; background: #00e5ff; color:#000; font-weight:bold; border:none; border-radius:8px; margin-top:15px; cursor:pointer; font-size: 1.1rem; text-transform: uppercase;"><i class="fas fa-wrench"></i> Složit stroj!</button>`;
+                }
+            }
+            box.innerHTML = html;
+        }
+
+        // Zavolej tuto funkci po načtení dat (např. uvnitř tvé funkce updateUI/render)
+function aktualizovatStroje(stav) {
+    const kontejner = document.getElementById('seznam-stroju');
+    const nazevText = document.getElementById('nazev-stroje');
+    
+    // Definice z Python kódu
+    const definice = {
+        "pesi": {"nazev": "Pěší chůze", "req": 1, "ikona": "🚶"},
+        "ctyrkolka": {"nazev": "Terénní čtyřkolka", "req": 8, "ikona": "🚜"},
+        "bugina": {"nazev": "Rychlá bugina", "req": 10, "ikona": "🏎️"},
+        "vznasedlo": {"nazev": "Vznášedlo", "req": 12, "ikona": "🛸"}
+    };
+
+    // Aktualizace textu aktivního stroje
+    nazevText.innerText = definice[stav.aktivni_stroj].nazev;
+    
+    // Vykreslení tlačítek
+    kontejner.innerHTML = '';
+    for (let id in definice) {
+        let stroj = definice[id];
+        let tlacitko = document.createElement('button');
+        tlacitko.innerHTML = `${stroj.ikona} ${stroj.nazev}`;
+        
+        // Pokud hráč nemá level, tlačítko je šedé a nefunkční
+        if (stav.level < stroj.req) {
+            tlacitko.disabled = true;
+            tlacitko.innerText += ` (lvl ${stroj.req})`;
+        } else {
+            tlacitko.onclick = () => vybratStroj(id);
+        }
+        
+        if (id === stav.aktivni_stroj) tlacitko.style.border = "2px solid #00e5ff";
+        
+        kontejner.appendChild(tlacitko);
+    }
+}
+
+// Funkce pro volání API
+async function vybratStroj(strojId) {
+    const response = await fetch('/api/vybrat_stroj', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: window.currentUserId, stroj_id: strojId})
+    });
+    const data = await response.json();
+    if(data.status === 'success') {
+        alert(data.zprava);
+        // Zde zavolej znovu funkci, která překresluje UI s novými daty (data.stav)
+        aktualizovatStroje(data.stav);
+    } else {
+        alert("Chyba: " + data.zprava);
+    }
+}
+
+        function slozitStroj() {
+            fetch('/api/slozit_stroj', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: prihlasenyUzivatelId })
+            }).then(res => res.json()).then(data => {
+                if (data.status === "success") {
+                    showToast(data.zprava);
+                    obnovStavHrace();
+                }
+            });
+        }
+
+        function vykresliJednuMisi(nazev, popis, aktualni, cil) {
+            var hotovo = aktualni >= cil;
+            var barva = hotovo ? "#00e676" : "#00d2ff";
+            var proc = (aktualni / cil) * 100;
+            return `
+                <div style="background: #111118; padding: 10px; margin-bottom: 8px; border-radius: 6px; border-left: 3px solid ${barva};">
+                    <div style="display:flex; justify-content:space-between; font-size: 0.8rem;">
+                        <b>${nazev}</b> <span style="color:${barva}; font-weight:bold;">${aktualni}/${cil}</span>
+                    </div>
+                    <div style="font-size: 0.7rem; color: #888; margin-bottom: 5px;">${popis}</div>
+                    <div style="width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: ${proc}%; background: ${barva};"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function vykresliDenik() {
+            var box = document.getElementById('milnikyContent');
+            var html = '<div class="wardrobe-section-title">Dlouhodobé milníky</div>';
+            
+            vsechnyMilniky.forEach(m => {
+                var splneno = odemceneMilnikyHrace.includes(m.id);
+                var barva = splneno ? "#00e676" : "#444";
+                var ikona = splneno ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-lock"></i>';
+                
+                html += `
+                    <div style="background: #111118; border-left: 4px solid ${barva}; padding: 10px; margin-bottom: 8px; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <b style="color: ${splneno ? '#fff' : '#888'};">${m.nazev}</b>
+                            <span style="color: ${barva};">${ikona}</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px;">${m.popis}</div>
+                        <div style="font-size: 11px; color: #00d2ff; margin-top: 4px; font-weight: bold;">+${m.xp_odmena} XP</div>
+                    </div>
+                `;
+            });
+
+            html += '<div class="wardrobe-section-title" style="margin-top: 25px;">Denní mise</div>';
+            if (hracLevel < 3) {
+                html += `
+                    <div style="background: rgba(255, 23, 68, 0.1); border: 1px dashed #ff1744; padding: 15px; text-align: center; border-radius: 10px; color: #ff1744;">
+                        <i class="fas fa-lock" style="font-size: 1.5rem; margin-bottom: 8px;"></i><br>
+                        <b>Odemkne se na Levelu 3</b><br>
+                        <span style="font-size: 0.75rem; color: #888;">Získávej XP průzkumem, ať získáš přístup k denním výzvám.</span>
+                    </div>`;
+            } else {
+                var t = Math.min(denniStav.truhly, 3);
+                var n = Math.min(denniStav.nakupy, 1);
+                var z = Math.min(denniStav.zapisy, 1);
+                var hotovo_vse = (t === 3 && n === 1 && z === 1);
+                
+                html += vykresliJednuMisi("Hledač", "Najdi a otevři dnes 3 truhly v mlze", t, 3);
+                html += vykresliJednuMisi("Sběratel", "Kup nebo aktivuj si dnes něco v obchodě", n, 1);
+                html += vykresliJednuMisi("Průzkumník", "Zapiš se dnes do libovolné vrcholové knihy", z, 1);
+                
+                if (hotovo_vse && denniStav.odmena_vybrana === 0) {
+                    html += `<button onclick="vybratDenniOdmenu()" style="width:100%; padding: 12px; background: #00e676; color:#000; font-weight:bold; border:none; border-radius:8px; margin-top:10px; cursor:pointer; font-size: 1rem;"><i class="fas fa-gift"></i> Vyzvednout 500 zlaťáků!</button>`;
+                } else if (denniStav.odmena_vybrana === 1) {
+                    html += `<div style="text-align:center; padding:10px; color:#00e676; font-weight:bold;"><i class="fas fa-check"></i> Denní odměna vybrána! Další úkoly zítra.</div>`;
+                }
+            }
+
+            html += '<div class="wardrobe-section-title" style="margin-top: 25px;">Nalezené artefakty</div>';
+            if (hracLevel < 6) {
+                html += `
+                    <div style="background: rgba(255, 23, 68, 0.1); border: 1px dashed #ff1744; padding: 15px; text-align: center; border-radius: 10px; color: #ff1744;">
+                        <i class="fas fa-lock" style="font-size: 1.5rem; margin-bottom: 8px;"></i><br>
+                        <b>Odemkne se na Levelu 6</b><br>
+                        <span style="font-size: 0.75rem; color: #888;">Tajemství ukrytá v mlze se zjeví až velmi zkušeným pátračům.</span>
+                    </div>`;
+            } else {
+                var artefaktyHtml = "";
+                artefaktySef.forEach(a => {
+                    var maArtefakt = hracArtefakty.includes(a.id);
+                    var ramBarva = maArtefakt ? "#ffea00" : "#333";
+                    var nadpisBarva = maArtefakt ? "#fff" : "#666";
+                    var textArtefaktu = maArtefakt ? a.nazev : "???";
+                    var popisArtefaktu = maArtefakt ? a.popis : "Musíš ho nejprve najít v mlze.";
+                    var ikonaStav = maArtefakt ? "none" : "grayscale(100%) opacity(0.3)";
+                    
+                    artefaktyHtml += `
+                        <div style="background: #111118; border: 1px solid ${ramBarva}; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; align-items: center; gap: 12px;">
+                            <div style="font-size: 28px; filter: ${ikonaStav};">${a.ikona}</div>
+                            <div>
+                                <div style="color: ${nadpisBarva}; font-weight: bold; font-size: 0.9rem;">${textArtefaktu}</div>
+                                <div style="color: #888; font-size: 0.75rem; margin-top: 3px;">${popisArtefaktu}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += artefaktyHtml;
+            }
+
+            box.innerHTML = html;
+        }
+
+        function vybratDenniOdmenu() {
+            fetch('/api/vybrat_denni_odmenu', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: prihlasenyUzivatelId })
+            }).then(res => res.json()).then(data => {
+                if (data.status === "success") {
+                    showToast("🎉 Denní mise splněny! Získáváš 500 zlaťáků!");
+                    obnovStavHrace();
+                }
+            });
+        }
+
         function aktualizujRozhrani() {
             document.getElementById('levelBadge').innerText = "LVL " + hracLevel;
-            document.getElementById('distanceBadge').innerText = celkovaVzdalenost.toFixed(2) + " KM";
+            var zobrVz = strojSlozen ? (celkovaVzdalenost * 1.5).toFixed(2) : celkovaVzdalenost.toFixed(2);
+            document.getElementById('distanceBadge').innerHTML = strojSlozen ? `<i class="fas fa-motorcycle"></i> ${zobrVz} KM` : `${zobrVz} KM`;
+            
             document.getElementById('xpBar').style.width = ((hracXp / hracXpPotreba) * 100) + "%";
             document.getElementById('xpText').innerText = hracXp + " / " + hracXpPotreba + " XP (Celkem " + hracCelkemXp + ")";
             document.querySelector('#coinAmount span').innerText = hracMince; 
@@ -421,16 +774,24 @@
             if (nahledVybaveni) { document.getElementById('previewBadge').style.display = 'block'; document.getElementById('clearPreviewBtn').style.display = 'block'; } 
             else { document.getElementById('previewBadge').style.display = 'none'; document.getElementById('clearPreviewBtn').style.display = 'none'; }
             if (userMarker) { userMarker.setIcon(ziskejIkonyHrace()); }
+            
             vykresliWardrobe();
+            vykresliDenik();
+            vykresliBanku();
+            vykresliGaraz();
         }
 
         function togglePanel(panelId) {
-            var panely = ['wardrobePanel'];
+            var panely = ['wardrobePanel', 'denikPanel', 'bankPanel', 'garazPanel'];
             panely.forEach(id => {
                 var el = document.getElementById(id);
-                if (el) { 
-                    if (id === panelId) { el.classList.toggle('open'); if (panelId === 'wardrobePanel') { vymazNahled(); } } 
-                    else { el.classList.remove('open'); }
+                if (el) {
+                    if (id === panelId) {
+                        el.classList.toggle('open');
+                        if (id === 'wardrobePanel') vymazNahled();
+                    } else {
+                        el.classList.remove('open');
+                    }
                 }
             });
         }
@@ -448,6 +809,20 @@
         function vymazNahled(event) {
             if (event) event.stopPropagation();
             nahledVybaveni = null; aktualizujRozhrani();
+        }
+
+        function wardrobeKoupit(itemId, cena, event) {
+            event.stopPropagation();
+            if (hracMince < cena) { alert("Nemáš dostatek mincí!"); return; }
+            fetch('/api/koupit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId, cena: cena, user_id: prihlasenyUzivatelId }) })
+            .then(res => res.json()).then(data => {
+                if (data.status === "success") {
+                    if (data.vyhra !== undefined && data.vyhra !== null) { showToast(`🎲 Otevřela jsi truhlu! Získáváš ${data.vyhra} zlaťáků!`); } 
+                    else { showToast("✨ Nákup byl úspěšný!"); }
+                    nahledVybaveni = null;
+                    obnovStavHrace();
+                }
+            });
         }
 
         function vykresliWardrobe() {
@@ -478,10 +853,10 @@
                         if (klic === 'mapa') {
                             var maBuff = hracAktivniBuffy[p.id] !== undefined;
                             if (maBuff) { tlacitka += `<span style="font-size:0.6rem; color:#00e676; font-weight:bold; width:100%;">Aktivní (${Math.ceil(hracAktivniBuffy[p.id]/60)} m)</span>`; } 
-                            else { tlacitka += `<button class="buy-btn" onclick="koupitPredmet('${p.id}', ${p.cena}, event)">Aktivovat ${p.cena}🪙</button>`; }
-                        } else if (klic === 'consumable') { tlacitka += `<button class="buy-btn" onclick="koupitPredmet('${p.id}', ${p.cena}, event)">Koupit ${p.cena}🪙</button>`; } 
+                            else { tlacitka += `<button class="buy-btn" onclick="wardrobeKoupit('${p.id}', ${p.cena}, event)">Aktivovat ${p.cena}🪙</button>`; }
+                        } else if (klic === 'consumable') { tlacitka += `<button class="buy-btn" onclick="wardrobeKoupit('${p.id}', ${p.cena}, event)">Koupit ${p.cena}🪙</button>`; } 
                         else {
-                            if (!jeZakoupen) { tlacitka += `<button class="buy-btn" onclick="koupitPredmet('${p.id}', ${p.cena}, event)">Koupit ${p.cena}🪙</button>`; } 
+                            if (!jeZakoupen) { tlacitka += `<button class="buy-btn" onclick="wardrobeKoupit('${p.id}', ${p.cena}, event)">Koupit ${p.cena}🪙</button>`; } 
                             else if (!jeNasazen) { tlacitka += `<button class="equip-btn" onclick="zmenObleceni('${p.typ}', '${p.id}', event)">Obléct</button>`; } 
                             else { tlacitka += `<button class="unequip-btn" onclick="zmenObleceni('${p.typ}', '', event)">Sundat</button>`; }
                             var activeClass = jeVNahledu ? 'active' : '';
@@ -496,154 +871,11 @@
 
         function zmenObleceni(typ, itemId, event) {
             if(event) event.stopPropagation();
-            hracVybaveni[typ] = itemId; nahledVybaveni = null; aktualizujRozhrani();
-            fetch('/api/zmenit_obleceni', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ typ: typ, item_id: itemId }) });
+            fetch('/api/zmenit_obleceni', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ typ: typ, item_id: itemId, user_id: prihlasenyUzivatelId }) })
+            .then(() => { obnovStavHrace(); });
         }
 
-        function koupitPredmet(itemId, cena, event) {
-            event.stopPropagation();
-            if (hracMince < cena) { alert("Nemáš dostatek mincí! Běž ven a sbírej loot chůzí, nebo se podívej na reklamu."); return; }
-            fetch('/api/body', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: itemId, cena: cena }) })
-            .then(res => res.json()).then(data => {
-                if (data.status === "success") {
-                    hracMince = data.stav.mince; hracZakoupene = data.stav.zakoupene; hracAktivniBuffy = data.stav.aktivni_buffy;
-                    hracLevel = data.stav.level; hracXp = data.stav.xp; hracXpPotreba = data.stav.xp_potreba; hracCelkemXp = data.stav.celkem_xp;
-                    if (data.vyhra !== undefined && data.vyhra !== null) { showToast(`🎲 Otevřela jsi truhlu! Získáváš neuvěřitelných ${data.vyhra} zlaťáků!`); } 
-                    else { showToast("✨ Nákup byl úspěšný!"); }
-                    nahledVybaveni = null; aktualizujRozhrani();
-                    fetch('/api/body?user_id=' + prihlasenyUzivatelId).then(r => r.json()).then(d => { prekresliMlhu(d.body); });
-                }
-            });
-        }
-
-        function nactiHraceAMapu() {
-            if (!prihlasenyUzivatelId) return;
-            fetch('/api/body?user_id=' + prihlasenyUzivatelId).then(res => res.json()).then(data => {
-                if (data.body && data.body.length > 0) {
-                    var posledniBod = data.body[data.body.length - 1];
-                    if (posledniBod[0] !== 0 && posledniBod[1] !== 0) {
-                        map.setView(posledniBod, 16);
-                        if (!userMarker) { userMarker = L.marker(posledniBod, {icon: ziskejIkonyHrace()}).addTo(map); } 
-                        else { userMarker.setLatLng(posledniBod); }
-                        doplňLoot(posledniBod[0], posledniBod[1]);
-                    }
-                }
-                prekresliMlhu(data.body);
-            });
-        }
-
-        function toggleGPS() {
-            var btn = document.getElementById('gpsBtn');
-            if (isTracking) {
-                navigator.geolocation.clearWatch(watchId);
-                isTracking = false; btn.innerText = "GPS"; btn.classList.remove('active');
-            } else {
-                if (!navigator.geolocation) { alert("GPS selhala."); return; }
-                btn.innerText = "Sleduji"; btn.classList.add('active'); isTracking = true;
-
-                watchId = navigator.geolocation.watchPosition(
-                    function(pos) {
-                        var lat = pos.coords.latitude; var lng = pos.coords.longitude; var smer = pos.coords.heading;
-                        if (lat !== 0 && lng !== 0) {
-                            map.setView([lat, lng], 16);
-                            if (!userMarker) { userMarker = L.marker([lat, lng], {icon: ziskejIkonyHrace()}).addTo(map); } 
-                            else { userMarker.setLatLng([lat, lng]); }
-
-                            if (smer !== null && !isNaN(smer)) {
-                                setTimeout(function() {
-                                    var ikonka = userMarker.getElement();
-                                    if (ikonka) {
-                                        ikonka.style.transformOrigin = 'center center';
-                                        var puvodniTransform = ikonka.style.transform;
-                                        puvodniTransform = puvodniTransform.replace(/ rotate\(.*?\)/g, '');
-                                        ikonka.style.transform = puvodniTransform + ' rotate(' + smer + 'deg)';
-                                    }
-                                }, 50); 
-                            }
-
-                            if (typeof doplňLoot === "function") doplňLoot(lat, lng);
-                            if (typeof zkontrolujKolizeSLootem === "function") zkontrolujKolizeSLootem(lat, lng);
-
-                            if (prihlasenyUzivatelId) {
-                                fetch('/api/ulozit', {
-                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ lat: lat, lng: lng, user_id: prihlasenyUzivatelId })
-                                }).then(res => { if (!res.ok) throw new Error('Chyba serveru: ' + res.status); return res.json(); })
-                                .then(data => {
-                                    if (data.stav) { hracLevel = data.stav.level; hracXp = data.stav.xp; if (data.stav.xp_potreba) hracXpPotreba = data.stav.xp_potreba; }
-                                    aktualizujRozhrani();
-                                    if (data.vsechny_body) { prekresliMlhu(data.vsechny_body); }
-                                }).catch(err => { alert("Chyba ukládání postupu: " + err.message); });
-                            }
-                        }
-                    },
-                    function(err) { console.warn('GPS varování: ' + err.message); },
-                    { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }
-                );
-            }
-        }
-
-        // --- ZAJÍMAVÁ MÍSTA (VRCHOLOVÁ KNIHA) ---
-        function nactiZajimavosti() {
-            fetch('/api/zajimavosti').then(res => res.json()).then(data => {
-                data.forEach(misto => {
-                    var marker = L.marker([misto.lat, misto.lng]).addTo(map);
-                    var obsahBubliny = `
-                        <div style="text-align: center;">
-                            <b>${misto.nazev}</b><br><span style="font-size: 12px; color: #555;">${misto.popis}</span><br><br>
-                            <button onclick="otevriKnihu(${misto.id}, ${misto.lat}, ${misto.lng}, '${misto.nazev}')" style="background: #00d2ff; border: none; padding: 8px; border-radius: 5px; cursor: pointer; color: black; font-weight: bold;">
-                                Otevřít knihu
-                            </button>
-                        </div>
-                    `;
-                    marker.bindPopup(obsahBubliny);
-                });
-            });
-        }
-
-        function otevriKnihu(id, mistoLat, mistoLng, nazev) {
-            if (!userMarker) { alert("Nejdřív musím najít tvou polohu podle GPS! Klikni na Sleduji."); return; }
-            var vzdalenost = map.distance(userMarker.getLatLng(), [mistoLat, mistoLng]);
-            if (vzdalenost > 50) { alert("Jsi moc daleko! Jsi " + Math.round(vzdalenost) + " metrů daleko. Musíš přijít blíž."); return; }
-            
-            aktualniZajimavostId = id;
-            document.getElementById('kniha-nazev').innerText = "Zápisník: " + nazev;
-            document.getElementById('kniha-screen').style.display = 'flex';
-            nactiVzkazy();
-        }
-
-        function nactiVzkazy() {
-            var box = document.getElementById('kniha-zapisy'); box.innerHTML = "<i>Načítám zápisy...</i>";
-            fetch('/api/zapisnik?zajimavost_id=' + aktualniZajimavostId).then(res => res.json()).then(data => {
-                box.innerHTML = "";
-                if (data.length === 0) { box.innerHTML = "<i>Zatím tu nikdo nebyl. Buď první!</i>"; } 
-                else {
-                    data.forEach(zapis => {
-                        box.innerHTML += `
-                        <div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 8px;">
-                            <span style="color: #00d2ff; font-weight: bold;">${zapis.jmeno}</span> 
-                            <span style="font-size: 11px; color: #888;">(${zapis.datum})</span><br>
-                            ${zapis.vzkaz}
-                        </div>`;
-                    });
-                }
-            });
-        }
-
-        function ulozitVzkaz() {
-            var vstupText = document.getElementById('kniha-novy-vzkaz'); var vzkaz = vstupText.value;
-            if (!vzkaz) { alert("Napiš něco!"); return; }
-            fetch('/api/zapisnik', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ zajimavost_id: aktualniZajimavostId, user_id: prihlasenyUzivatelId, vzkaz: vzkaz })
-            }).then(() => { vstupText.value = ""; nactiVzkazy(); });
-        }
-
-        function zavritKnihu() { document.getElementById('kniha-screen').style.display = 'none'; }
-
-        // --- INICIALIZACE PO ZAPNUTÍ (Před přihlášením) ---
-        aktualizujRozhrani(); // Načte jen vzhled postavičky a tlačítka, mapu NE
-
+        aktualizujRozhrani();
     </script>
 </body>
 </html>
