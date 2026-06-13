@@ -30,7 +30,7 @@ def inicializuj_databazi():
     cursor.execute('''CREATE TABLE IF NOT EXISTS hrac_banka (user_id INTEGER PRIMARY KEY, zainvestovano INTEGER DEFAULT 0, posledni_vyber TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS hrac_garaz (user_id INTEGER, dil_id TEXT, PRIMARY KEY (user_id, dil_id))''')
     
-    # NOVÁ TABULKA PRO STROJE
+    # OPRAVENO: Správná struktura tabulky pro ukládání aktivního stroje
     cursor.execute('''CREATE TABLE IF NOT EXISTS hrac_stroj (user_id INTEGER PRIMARY KEY, aktivni_stroj_id TEXT DEFAULT 'pesi')''')
     
     cursor.execute("SELECT * FROM zajimavosti WHERE nazev = 'Výškový bod Větrník'")
@@ -55,7 +55,7 @@ def aktualizuj_denni_postup(user_id, sloupec):
     conn.commit()
     conn.close()
 
-# --- DEFINICE ---
+# --- DEFINICE HRY ---
 DEFINICE_PREDMETU = [
     {"id": "h1", "nazev": "Trenérská kšiltovka", "barva": "#ff1744", "typ": "hlava", "req_level": 1, "cena": 0},
     {"id": "h3", "nazev": "Ochranná přilba", "barva": "#00e5ff", "typ": "hlava", "req_level": 5, "cena": 0},
@@ -112,7 +112,7 @@ DEFINICE_DILU = [
     {"id": "d_ram", "nazev": "Ocelový rám", "ikona": "🛠️"}
 ]
 
-# --- FUNKCE ---
+# --- POMOCNÉ FUNKCE ---
 def spocitej_vzdalenost(body):
     if len(body) < 2: return 0.0
     celkem_metru = 0.0
@@ -170,21 +170,29 @@ def spocti_rpg_stav(user_id):
     cursor.execute("SELECT dil_id FROM hrac_garaz WHERE user_id = ?", (user_id,))
     nalezene_dily = [r[0] for r in cursor.fetchall()]
     
-    # NOVÁ LOGIKA PRO STROJ
+    # NAČTENÍ AKTIVNÍHO STROJE
     cursor.execute("SELECT aktivni_stroj_id FROM hrac_stroj WHERE user_id = ?", (user_id,))
     stroj_row = cursor.fetchone()
     aktivni_stroj = stroj_row[0] if stroj_row else "pesi"
     
+    # Bezpečnostní pojistka: Pokud hráč nemá dostatek dílů, stroj se resetuje na chůzi
+    if len(nalezene_dily) < len(DEFINICE_DILU) and aktivni_stroj != "pesi":
+        aktivni_stroj = "pesi"
+        cursor.execute("INSERT OR REPLACE INTO hrac_stroj (user_id, aktivni_stroj_id) VALUES (?, 'pesi')", (user_id,))
+        conn.commit()
+        
     conn.close()
 
     vzdalenost_km = spocitej_vzdalenost(body)
-    # Použití bonusu stroje
+    
+    # OPRAVENO: Bonus stroje se nyní správně aplikuje na efektivní vzdálenost pro výpočet XP i milníků
     bonus = DEFINICE_STROJU.get(aktivni_stroj, {}).get("bonus", 1.0)
-    celkem_xp = int((vzdalenost_km * bonus) * 300)
+    efektivni_vzdalenost = vzdalenost_km * bonus
+    celkem_xp = int(efektivni_vzdalenost * 300)
     
     odemcene_milniky = []
     for m in DEFINICE_MILNIKU:
-        if vzdalenost_km >= m["vzdalenost"]:
+        if efektivni_vzdalenost >= m["vzdalenost"]:
             celkem_xp += m["xp_odmena"]
             odemcene_milniky.append(m["id"])
 
@@ -204,7 +212,7 @@ def spocti_rpg_stav(user_id):
         "banka_stav": banka_stav, "nalezene_dily": nalezene_dily, "aktivni_stroj": aktivni_stroj
     }
 
-# --- ROUTES ---
+# --- ROUTES / ENDPOINTY ---
 @app.route('/')
 def index():
     return render_template('index.html', stav=spocti_rpg_stav(None), milniky=DEFINICE_MILNIKU, predmety=DEFINICE_PREDMETU, artefakty=DEFINICE_ARTEFAKTU, dily=DEFINICE_DILU)
@@ -396,6 +404,31 @@ def sebrat_dil():
     conn.close()
     return jsonify({"status": "success", "zprava": zprava, "stav": spocti_rpg_stav(user_id)})
 
+# OPRAVENO: Skládání strojů nyní korektně zapisuje do textového sloupce aktivni_stroj_id
+@app.route('/api/slozit_stroj', methods=['POST'])
+def slozit_stroj():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    if not user_id: return jsonify({"status": "error"})
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT dil_id FROM hrac_garaz WHERE user_id = ?", (user_id,))
+    vlastnene = [r[0] for r in cursor.fetchall()]
+    
+    if len(vlastnene) >= len(DEFINICE_DILU):
+        cursor.execute("INSERT OR REPLACE INTO hrac_stroj (user_id, aktivni_stroj_id) VALUES (?, 'ctyrkolka')", (user_id,))
+        conn.commit()
+        zprava = "🏍️ ÚSPĚCH! Poskládala jsi základní mechanickou sadu. Tvůj první stroj byl automaticky aktivován v Garáži!"
+        status = "success"
+    else:
+        zprava = "Chybí ti nějaké díly."
+        status = "chyba"
+
+    conn.close()
+    return jsonify({"status": status, "zprava": zprava, "stav": spocti_rpg_stav(user_id)})
+
+# OPRAVENO: Výběr konkrétního stroje zohledňuje kompletaci mechanické sady i levelové požadavky
 @app.route('/api/vybrat_stroj', methods=['POST'])
 def vybrat_stroj():
     data = request.get_json() or {}
@@ -405,12 +438,22 @@ def vybrat_stroj():
     if stroj_id not in DEFINICE_STROJU:
         return jsonify({"status": "error", "zprava": "Neznámý stroj"}), 400
     
-    stav = spocti_rpg_stav(user_id)
-    if stav['level'] < DEFINICE_STROJU[stroj_id]['req_level']:
-        return jsonify({"status": "error", "zprava": f"Potřebuješ level {DEFINICE_STROJU[stroj_id]['req_level']}!"}), 403
-
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    cursor.execute("SELECT dil_id FROM hrac_garaz WHERE user_id = ?", (user_id,))
+    vlastnene_dily = [r[0] for r in cursor.fetchall()]
+    
+    stav = spocti_rpg_stav(user_id)
+    
+    # Podmínka: Pro jakýkoliv pokročilý stroj musí mít postavenou kompletní sadu dílů
+    if stroj_id != "pesi" and len(vlastnene_dily) < len(DEFINICE_DILU):
+        conn.close()
+        return jsonify({"status": "error", "zprava": "Musíš nejprve v garáži poskládat všech 5 základních mechanických dílů!"}), 403
+        
+    if stav['level'] < DEFINICE_STROJU[stroj_id]['req_level']:
+        conn.close()
+        return jsonify({"status": "error", "zprava": f"Potřebuješ level {DEFINICE_STROJU[stroj_id]['req_level']}!"}), 403
+
     cursor.execute("INSERT OR REPLACE INTO hrac_stroj (user_id, aktivni_stroj_id) VALUES (?, ?)", (user_id, stroj_id))
     conn.commit()
     conn.close()
