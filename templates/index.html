@@ -99,6 +99,12 @@
         .preview-btn.active { background: #ffea00; color: #000; border-color: #ffea00; box-shadow: 0 0 8px rgba(255, 234, 0, 0.4); }
         .buy-btn:hover, .equip-btn:hover, .unequip-btn:hover { filter: brightness(1.15); }
 
+        /* NOVÉ STYLY PRO TLAČÍTKA STROJŮ V GARÁŽI */
+        .stroj-btn { width: 100%; margin-bottom: 10px; padding: 15px; border-radius: 8px; border: 1px solid #444; background: #111118; color: #fff; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .stroj-btn:hover:not(:disabled) { border-color: #00e5ff; background: #151524; }
+        .stroj-btn.active { border-color: #00e676; background: rgba(0, 230, 118, 0.1); box-shadow: 0 0 10px rgba(0, 230, 118, 0.2); }
+        .stroj-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .leaflet-top { top: 100px; }
         .leaflet-marker-icon { transition: transform 1.5s linear; }
 
@@ -205,13 +211,6 @@
         <div class="panel-content" id="garazContent"></div>
     </div>
 
-    <div class="card">
-    <h3>Dopravní prostředek</h3>
-    <p>Aktivní: <strong id="nazev-stroje">Pěší chůze</strong></p>
-    <div id="seznam-stroju" class="grid-layout">
-        </div>
-</div>
-
     <script>
         var prihlasenyUzivatelId = null;
         var aktualniZajimavostId = null;
@@ -233,8 +232,10 @@
         var denniStav = {truhly: 0, nakupy: 0, zapisy: 0, odmena_vybrana: 0};
         var hracArtefakty = [];
         var bankaStav = {zainvestovano: 0, lze_vybrat: false};
+        
+        // ZMĚNĚNÉ PROMĚNNÉ PRO NOVÝ SYSTÉM STROJŮ
         var hracDily = [];
-        var strojSlozen = false;
+        var aktualniStroj = "pesi";
         
         var predmetySef = {{ predmety|tojson|default('[]') }};
         var vsechnyMilniky = {{ milniky|tojson|default('[]') }};
@@ -274,8 +275,8 @@
                 denniStav = data.denni_stav;
                 hracArtefakty = data.nalezene_artefakty;
                 bankaStav = data.banka_stav;
-                hracDily = data.nalezene_dily;
-                strojSlozen = data.stroj_slozen;
+                hracDily = data.nalezene_dily || [];
+                aktualniStroj = data.aktivni_stroj || "pesi";
                 aktualizujRozhrani();
             });
         }
@@ -411,7 +412,6 @@
                     var offsetLat = (vzdalenostMetry / 111320) * Math.cos(uhel);
                     var offsetLng = (vzdalenostMetry / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(uhel);
                     
-                    // --- ZMĚNĚNÁ LOGIKA GENEROVÁNÍ MAPY DLE AKTIVNÍCH BUFFŮ ---
                     var sanceArtefakt = hracAktivniBuffy['m_art_radar'] !== undefined ? 0.30 : 0.15;
                     var sanceDil = hracAktivniBuffy['m_stroj_radar'] !== undefined ? 0.30 : 0.15;
                     
@@ -536,6 +536,7 @@
             });
         }
 
+        // --- ZCELA NOVÁ LOGIKA PRO GARÁŽ A VÝBĚR STROJŮ ---
         function vykresliGaraz() {
             var box = document.getElementById('garazContent');
             var html = '';
@@ -545,20 +546,10 @@
                     <div style="background: rgba(255, 23, 68, 0.1); border: 1px dashed #ff1744; padding: 15px; text-align: center; border-radius: 10px; color: #ff1744; margin-top: 20px;">
                         <i class="fas fa-lock" style="font-size: 1.5rem; margin-bottom: 8px;"></i><br>
                         <b>Odemkne se na Levelu 8</b><br>
-                        <span style="font-size: 0.75rem; color: #888;">Garáž je zatím zavřená. Jakmile dosáhneš 8. levelu, začneš v mlze nacházet mechanické součástky ke složení vlastního stroje.</span>
+                        <span style="font-size: 0.75rem; color: #888;">Garáž je zatím zavřená. Jakmile dosáhneš 8. levelu, začneš v mlze nacházet mechanické součástky ke složení vlastních strojů.</span>
                     </div>`;
-            } else if (strojSlozen) {
-                html += `
-                    <div style="background: #111118; border: 1px solid #00e676; padding: 20px; border-radius: 10px; text-align: center;">
-                        <i class="fas fa-motorcycle" style="font-size: 4rem; color: #00e676; margin-bottom: 15px;"></i>
-                        <h3 style="margin: 0 0 10px 0; color: #fff;">Stroj je plně funkční!</h3>
-                        <div style="font-size: 0.85rem; color: #00e676; font-weight: bold; background: rgba(0, 230, 118, 0.1); padding: 8px; border-radius: 5px;">
-                            AKTIVNÍ BONUS: Tvé nachozené kilometry se nyní počítají 1.5x rychleji!
-                        </div>
-                    </div>
-                `;
-            } else {
-                html += '<div style="color: #aaa; font-size: 0.85rem; margin-bottom: 15px;">Sesbírej všechny díly ztracené v mlze a slož svůj stroj. Získáš obrovskou výhodu do pohybu! (Duplikáty můžeš rovnou prodávat!)</div>';
+            } else if (hracDily.length < dilySef.length) {
+                html += '<div style="color: #aaa; font-size: 0.85rem; margin-bottom: 15px;">Sesbírej všechny díly ztracené v mlze a otevři si vozový park. (Duplikáty můžeš rovnou prodávat!)</div>';
                 
                 var dilyHtml = "";
                 dilySef.forEach(d => {
@@ -576,76 +567,49 @@
                     `;
                 });
                 html += dilyHtml;
+                html += `<div style="text-align: center; color: #ffea00; font-weight: bold; margin-top: 15px;">Sebráno: ${hracDily.length} / ${dilySef.length} dílů</div>`;
+            } else {
+                html += '<div class="wardrobe-section-title">Tvůj vozový park</div>';
+                html += '<div style="color: #aaa; font-size: 0.75rem; margin-bottom: 15px;">Díky sebraným součástkám jsi odemkla garáž. Vyber si stroj na cestu!</div>';
                 
-                if (hracDily.length >= dilySef.length) {
-                    html += `<button onclick="slozitStroj()" style="width:100%; padding: 15px; background: #00e5ff; color:#000; font-weight:bold; border:none; border-radius:8px; margin-top:15px; cursor:pointer; font-size: 1.1rem; text-transform: uppercase;"><i class="fas fa-wrench"></i> Složit stroj!</button>`;
-                }
+                var definiceStroju = {
+                    "pesi": {"nazev": "Pěší chůze", "bonus": 1.0, "req": 1, "ikona": "🚶"},
+                    "ctyrkolka": {"nazev": "Terénní čtyřkolka", "bonus": 1.5, "req": 8, "ikona": "🚜"},
+                    "bugina": {"nazev": "Rychlá bugina", "bonus": 2.0, "req": 10, "ikona": "🏎️"},
+                    "vznasedlo": {"nazev": "Vznášedlo", "bonus": 2.5, "req": 12, "ikona": "🛸"}
+                };
+
+                Object.keys(definiceStroju).forEach(id => {
+                    var s = definiceStroju[id];
+                    var splneno = hracLevel >= s.req;
+                    var aktivni = (aktualniStroj === id);
+                    
+                    html += `
+                        <button class="stroj-btn ${aktivni ? 'active' : ''}" 
+                                ${!splneno ? 'disabled' : ''} 
+                                onclick="vybratStroj('${id}')">
+                            <div style="font-size: 1.5rem; margin-bottom: 5px;">${s.ikona} ${s.nazev}</div>
+                            <div style="font-size: 0.75rem; color: ${aktivni ? '#00e5ff' : '#aaa'};">
+                                Bonus: ${s.bonus}x XP ${!splneno ? `| Odemkne se na Lvl ${s.req}` : ''}
+                                ${aktivni ? '<br><b style="color: #00e676;">(Aktivní)</b>' : ''}
+                            </div>
+                        </button>
+                    `;
+                });
             }
             box.innerHTML = html;
         }
 
-        // Zavolej tuto funkci po načtení dat (např. uvnitř tvé funkce updateUI/render)
-function aktualizovatStroje(stav) {
-    const kontejner = document.getElementById('seznam-stroju');
-    const nazevText = document.getElementById('nazev-stroje');
-    
-    // Definice z Python kódu
-    const definice = {
-        "pesi": {"nazev": "Pěší chůze", "req": 1, "ikona": "🚶"},
-        "ctyrkolka": {"nazev": "Terénní čtyřkolka", "req": 8, "ikona": "🚜"},
-        "bugina": {"nazev": "Rychlá bugina", "req": 10, "ikona": "🏎️"},
-        "vznasedlo": {"nazev": "Vznášedlo", "req": 12, "ikona": "🛸"}
-    };
-
-    // Aktualizace textu aktivního stroje
-    nazevText.innerText = definice[stav.aktivni_stroj].nazev;
-    
-    // Vykreslení tlačítek
-    kontejner.innerHTML = '';
-    for (let id in definice) {
-        let stroj = definice[id];
-        let tlacitko = document.createElement('button');
-        tlacitko.innerHTML = `${stroj.ikona} ${stroj.nazev}`;
-        
-        // Pokud hráč nemá level, tlačítko je šedé a nefunkční
-        if (stav.level < stroj.req) {
-            tlacitko.disabled = true;
-            tlacitko.innerText += ` (lvl ${stroj.req})`;
-        } else {
-            tlacitko.onclick = () => vybratStroj(id);
-        }
-        
-        if (id === stav.aktivni_stroj) tlacitko.style.border = "2px solid #00e5ff";
-        
-        kontejner.appendChild(tlacitko);
-    }
-}
-
-// Funkce pro volání API
-async function vybratStroj(strojId) {
-    const response = await fetch('/api/vybrat_stroj', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id: window.currentUserId, stroj_id: strojId})
-    });
-    const data = await response.json();
-    if(data.status === 'success') {
-        alert(data.zprava);
-        // Zde zavolej znovu funkci, která překresluje UI s novými daty (data.stav)
-        aktualizovatStroje(data.stav);
-    } else {
-        alert("Chyba: " + data.zprava);
-    }
-}
-
-        function slozitStroj() {
-            fetch('/api/slozit_stroj', {
+        function vybratStroj(strojId) {
+            fetch('/api/vybrat_stroj', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: prihlasenyUzivatelId })
+                body: JSON.stringify({ user_id: prihlasenyUzivatelId, stroj_id: strojId })
             }).then(res => res.json()).then(data => {
                 if (data.status === "success") {
                     showToast(data.zprava);
                     obnovStavHrace();
+                } else {
+                    alert(data.zprava);
                 }
             });
         }
@@ -761,8 +725,17 @@ async function vybratStroj(strojId) {
 
         function aktualizujRozhrani() {
             document.getElementById('levelBadge').innerText = "LVL " + hracLevel;
-            var zobrVz = strojSlozen ? (celkovaVzdalenost * 1.5).toFixed(2) : celkovaVzdalenost.toFixed(2);
-            document.getElementById('distanceBadge').innerHTML = strojSlozen ? `<i class="fas fa-motorcycle"></i> ${zobrVz} KM` : `${zobrVz} KM`;
+            
+            // Správné zobrazení násobiče u stroje
+            var definiceStroju = {
+                "pesi": {"bonus": 1.0, "ikona": "🚶"},
+                "ctyrkolka": {"bonus": 1.5, "ikona": "🚜"},
+                "bugina": {"bonus": 2.0, "ikona": "🏎️"},
+                "vznasedlo": {"bonus": 2.5, "ikona": "🛸"}
+            };
+            var dataStroje = definiceStroju[aktualniStroj] || definiceStroju["pesi"];
+            var zobrVz = (celkovaVzdalenost * dataStroje.bonus).toFixed(2);
+            document.getElementById('distanceBadge').innerHTML = `${dataStroje.ikona} ${zobrVz} KM`;
             
             document.getElementById('xpBar').style.width = ((hracXp / hracXpPotreba) * 100) + "%";
             document.getElementById('xpText').innerText = hracXp + " / " + hracXpPotreba + " XP (Celkem " + hracCelkemXp + ")";
